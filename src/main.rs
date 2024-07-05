@@ -5,7 +5,7 @@ pub mod parser;
 pub mod token;
 
 use interpreter::interpreter::Interpreter;
-use lexer::lexer::lex;
+use lexer::lexer::Lexer;
 use parser::parser::Parser;
 
 fn get_input() -> String {
@@ -20,9 +20,14 @@ fn main() {
     loop {
         let input = get_input();
 
-        let vec = lex(input);
+        let mut lexer = Lexer::new(input);
+        let tokens = lexer.lex();
 
-        let mut parser = Parser::new(vec);
+        for token in &tokens {
+            println!("{:?}", token.token_type);
+        }
+
+        let mut parser = Parser::new(tokens);
         let root = parser.parse();
 
         parser.print_tree(&root, 0);

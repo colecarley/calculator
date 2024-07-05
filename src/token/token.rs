@@ -1,11 +1,14 @@
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum TokenType {
     Number,
     Operator,
     LeftParen,
     RightParen,
+    Keyword,
+    Identifier,
 }
 
+#[derive(Clone, Debug)]
 pub struct Token {
     pub token_type: TokenType,
     pub value: String,
