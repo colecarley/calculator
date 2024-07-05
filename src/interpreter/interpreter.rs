@@ -1,21 +1,37 @@
+use std::collections::HashMap;
+
 use crate::node::node::Node;
 
 pub struct Interpreter {
-    root: Node,
+    identifiers: HashMap<String, i32>,
 }
 
 impl Interpreter {
-    pub fn new(root: Node) -> Interpreter {
-        Interpreter { root }
+    pub fn new() -> Interpreter {
+        Interpreter {
+            identifiers: HashMap::new(),
+        }
     }
 
-    pub fn evaluate(&self) -> i32 {
-        return self.evaluate_helper(&self.root);
+    pub fn evaluate(&mut self, root: Node) -> i32 {
+        return self.evaluate_helper(&root);
     }
 
-    fn evaluate_helper(&self, root: &Node) -> i32 {
+    fn evaluate_helper(&mut self, root: &Node) -> i32 {
+        if root.value == "Assignment" {
+            let identifier = &root.children[0].value;
+            let value = self.evaluate_helper(&root.children[1]);
+            self.identifiers.insert(identifier.clone(), value);
+            return value;
+        }
+
         if root.children.len() == 0 {
-            return root.value.parse::<i32>().unwrap();
+            let result = root.value.parse::<i32>();
+            if result.is_ok() {
+                return result.unwrap();
+            } else {
+                return *self.identifiers.get(&root.value).unwrap();
+            }
         }
 
         if root.children.len() == 1 {

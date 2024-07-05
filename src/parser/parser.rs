@@ -1,4 +1,6 @@
 /*
+Let -> Keyword Identifier '=' Expr
+
 Expr   -> Term ExprTail
 ExprTail -> '+' Term ExprTail
          | '-' Term ExprTail
@@ -28,7 +30,9 @@ impl Parser {
         for _ in 0..level {
             print!("  ");
         }
-        println!("{}", root.value);
+
+        print!("{}\n", root.value);
+
         for child in &root.children {
             self.print_tree(child, level + 1);
         }
@@ -44,7 +48,19 @@ impl Parser {
     }
 
     fn expression(&mut self, root: &mut Node) {
-        println!("Expression");
+        if self.peek().token_type == TokenType::Keyword {
+            match self.peek().value.as_str() {
+                "let" => {
+                    self.next();
+                    self.assignment(root);
+                    return;
+                }
+                _ => {
+                    panic!("Invalid keyword");
+                }
+            }
+        }
+
         let mut term = Node {
             value: "Term".to_string(),
             children: Vec::new(),
@@ -55,14 +71,13 @@ impl Parser {
     }
 
     fn expression_tail(&mut self, root: &mut Node) {
-        println!("Expression Tail");
         if (self.position) >= self.tokens.len() {
             return;
         }
         if self.tokens[self.position].token_type == TokenType::Operator {
-            match self.tokens[self.position].value.as_str() {
+            match self.peek().value.as_str() {
                 "+" | "-" => {
-                    root.value = self.tokens[self.position].value.clone();
+                    root.value = self.peek().value.clone();
                     self.next();
                     let mut term = Node {
                         value: "Term".to_string(),
@@ -80,7 +95,6 @@ impl Parser {
     }
 
     fn term(&mut self, root: &mut Node) {
-        println!("Term");
         let mut factor = Node {
             value: "Factor".to_string(),
             children: Vec::new(),
@@ -91,14 +105,13 @@ impl Parser {
     }
 
     fn term_tail(&mut self, root: &mut Node) {
-        println!("Term Tail");
         if (self.position) >= self.tokens.len() {
             return;
         }
-        if self.tokens[self.position].token_type == TokenType::Operator {
-            match self.tokens[self.position].value.as_str() {
+        if self.peek().token_type == TokenType::Operator {
+            match self.peek().value.as_str() {
                 "*" | "/" => {
-                    root.value = self.tokens[self.position].value.clone();
+                    root.value = self.peek().value.clone();
                     self.next();
                     let mut factor = Node {
                         value: "Factor".to_string(),
@@ -116,23 +129,29 @@ impl Parser {
     }
 
     fn factor(&mut self, root: &mut Node) {
-        println!("Factor");
-        if self.tokens[self.position].token_type == TokenType::LeftParen {
+        if self.peek().token_type == TokenType::LeftParen {
             self.next();
             let mut expression = Node {
                 value: "Expr".to_string(),
                 children: Vec::new(),
             };
             self.expression(&mut expression);
-            if self.tokens[self.position].token_type == TokenType::RightParen {
+            if self.peek().token_type == TokenType::RightParen {
                 self.next();
                 root.children.push(expression);
             } else {
                 panic!("Expected right parenthesis");
             }
-        } else if self.tokens[self.position].token_type == TokenType::Number {
+        } else if self.peek().token_type == TokenType::Number {
             let node = Node {
-                value: self.tokens[self.position].value.clone(),
+                value: self.peek().value.clone(),
+                children: Vec::new(),
+            };
+            root.children.push(node);
+            self.next();
+        } else if self.peek().token_type == TokenType::Identifier {
+            let node = Node {
+                value: self.peek().value.clone(),
                 children: Vec::new(),
             };
             root.children.push(node);
@@ -140,6 +159,40 @@ impl Parser {
         } else {
             panic!("Invalid factor");
         }
+    }
+
+    fn assignment(&mut self, root: &mut Node) {
+        root.value = "Assignment".to_string();
+        if self.peek().token_type != TokenType::Identifier {
+            panic!("Expected identifier");
+        };
+
+        let node = Node {
+            value: self.peek().value.clone(),
+            children: Vec::new(),
+        };
+        root.children.push(node);
+        self.next();
+
+        if self.peek().token_type != TokenType::Operator {
+            panic!("Expected assignment operator");
+        }
+
+        if self.peek().value == "=".to_string() {
+            self.next();
+            let mut expression = Node {
+                value: "Expr".to_string(),
+                children: Vec::new(),
+            };
+            self.expression(&mut expression);
+            root.children.push(expression);
+        } else {
+            panic!("Expected assignment operator");
+        }
+    }
+
+    fn peek(&self) -> &Token {
+        &self.tokens[self.position]
     }
 
     pub fn new(tokens: Vec<Token>) -> Parser {

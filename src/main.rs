@@ -17,24 +17,18 @@ fn get_input() -> String {
 }
 
 fn main() {
+    let mut interpreter = Interpreter::new();
     loop {
         let input = get_input();
 
         let mut lexer = Lexer::new(input);
         let tokens = lexer.lex();
 
-        for token in &tokens {
-            println!("{:?}", token.token_type);
-        }
-
         let mut parser = Parser::new(tokens);
         let root = parser.parse();
-
         parser.print_tree(&root, 0);
 
-        let interpreter = Interpreter::new(root);
-
-        let result = interpreter.evaluate();
-        println!("Result: {}", result);
+        let result = interpreter.evaluate(root);
+        println!("{}", result);
     }
 }
