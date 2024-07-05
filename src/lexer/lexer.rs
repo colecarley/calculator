@@ -1,4 +1,15 @@
 use crate::token::token::Token;
+use crate::token::token::TokenType;
+
+#[derive(PartialEq)]
+enum State {
+    Start,
+    Number,
+    Operator,
+    Whitespace,
+    LeftParen,
+    RightParen,
+}
 
 pub fn lex(input: String) -> Vec<Token> {
     use regex::Regex;
@@ -8,42 +19,42 @@ pub fn lex(input: String) -> Vec<Token> {
     let left_paren = Regex::new(r"\(").unwrap();
     let right_paren = Regex::new(r"\)").unwrap();
 
-    let mut state = "start"; // start, number, operator, whitespace, left_paren, right_paren
+    let mut state = State::Start; // start, number, operator, whitespace, left_paren, right_paren
     let mut tokens = Vec::<Token>::new();
 
     let mut buffer = String::new();
     for c in input.chars() {
         if number.is_match(&c.to_string()) {
-            state = "number";
+            state = State::Number;
             buffer += &c.to_string();
         } else if operator.is_match(&c.to_string()) {
-            if state == "number" {
-                tokens.push(Token::new("number".to_string(), buffer));
+            if state == State::Number {
+                tokens.push(Token::new(TokenType::Number, buffer));
                 buffer = String::new();
             }
-            state = "operator";
-            tokens.push(Token::new("operator".to_string(), c.to_string()));
+            state = State::Operator;
+            tokens.push(Token::new(TokenType::Operator, c.to_string()));
         } else if right_paren.is_match(&c.to_string()) {
-            if state == "number" {
-                tokens.push(Token::new("number".to_string(), buffer));
+            if state == State::Number {
+                tokens.push(Token::new(TokenType::Number, buffer));
                 buffer = String::new();
             }
-            state = "right_paren";
-            tokens.push(Token::new("right_paren".to_string(), c.to_string()));
+            state = State::RightParen;
+            tokens.push(Token::new(TokenType::RightParen, c.to_string()));
         } else if left_paren.is_match(&c.to_string()) {
-            if state == "number" {
-                tokens.push(Token::new("number".to_string(), buffer));
+            if state == State::Number {
+                tokens.push(Token::new(TokenType::Number, buffer));
                 buffer = String::new();
             }
-            state = "left_paren";
-            tokens.push(Token::new("left_paren".to_string(), c.to_string()));
+            state = State::LeftParen;
+            tokens.push(Token::new(TokenType::LeftParen, c.to_string()));
         } else if whitespace.is_match(&c.to_string()) {
-            if state == "number" {
-                tokens.push(Token::new("number".to_string(), buffer));
+            if state == State::Number {
+                tokens.push(Token::new(TokenType::Number, buffer));
                 buffer = String::new();
             }
 
-            state = "whitespace";
+            state = State::Whitespace;
         } else {
             println!("Invalid character: {}", c);
         }

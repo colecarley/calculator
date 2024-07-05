@@ -12,7 +12,7 @@ Factor -> '(' Expr ')'
 */
 
 use crate::node::node::Node;
-use crate::token::token::Token;
+use crate::token::token::{Token, TokenType};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -59,7 +59,7 @@ impl Parser {
         if (self.position) >= self.tokens.len() {
             return;
         }
-        if self.tokens[self.position].token_type == "operator" {
+        if self.tokens[self.position].token_type == TokenType::Operator {
             match self.tokens[self.position].value.as_str() {
                 "+" | "-" => {
                     root.value = self.tokens[self.position].value.clone();
@@ -95,7 +95,7 @@ impl Parser {
         if (self.position) >= self.tokens.len() {
             return;
         }
-        if self.tokens[self.position].token_type == "operator" {
+        if self.tokens[self.position].token_type == TokenType::Operator {
             match self.tokens[self.position].value.as_str() {
                 "*" | "/" => {
                     root.value = self.tokens[self.position].value.clone();
@@ -117,20 +117,20 @@ impl Parser {
 
     fn factor(&mut self, root: &mut Node) {
         println!("Factor");
-        if self.tokens[self.position].token_type == "left_paren" {
+        if self.tokens[self.position].token_type == TokenType::LeftParen {
             self.next();
             let mut expression = Node {
                 value: "Expr".to_string(),
                 children: Vec::new(),
             };
             self.expression(&mut expression);
-            if self.tokens[self.position].token_type == "right_paren" {
+            if self.tokens[self.position].token_type == TokenType::RightParen {
                 self.next();
                 root.children.push(expression);
             } else {
                 panic!("Expected right parenthesis");
             }
-        } else if self.tokens[self.position].token_type == "number" {
+        } else if self.tokens[self.position].token_type == TokenType::Number {
             let node = Node {
                 value: self.tokens[self.position].value.clone(),
                 children: Vec::new(),
