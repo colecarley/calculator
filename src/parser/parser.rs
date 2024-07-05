@@ -162,7 +162,7 @@ impl Parser {
     }
 
     fn assignment(&mut self, root: &mut Node) {
-        root.value = "Assignment".to_string();
+        root.value = "=".to_string();
         if self.peek().token_type != TokenType::Identifier {
             panic!("Expected identifier");
         };

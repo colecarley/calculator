@@ -18,7 +18,7 @@ impl Interpreter {
     }
 
     fn evaluate_helper(&mut self, root: &Node) -> i32 {
-        if root.value == "Assignment" {
+        if root.value == "=" {
             let identifier = &root.children[0].value;
             let value = self.evaluate_helper(&root.children[1]);
             self.identifiers.insert(identifier.clone(), value);
