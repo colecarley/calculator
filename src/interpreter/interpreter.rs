@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::node::node::Node;
+use crate::node::node::{Node, NodeType};
 
 pub struct Interpreter {
     identifiers: HashMap<String, i32>,
@@ -18,19 +18,32 @@ impl Interpreter {
     }
 
     fn evaluate_helper(&mut self, root: &Node) -> i32 {
-        if root.value == "=" {
-            let identifier = &root.children[0].value;
+        if root.node_type == NodeType::Expression
+            && root.value.is_some()
+            && root.value.as_ref().unwrap() == "="
+        {
+            let identifier = root.children[0]
+                .value
+                .as_ref()
+                .expect("expected an identifier");
             let value = self.evaluate_helper(&root.children[1]);
             self.identifiers.insert(identifier.clone(), value);
             return value;
         }
 
         if root.children.len() == 0 {
-            let result = root.value.parse::<i32>();
+            let result = root
+                .value
+                .as_ref()
+                .expect("expected a value")
+                .parse::<i32>();
             if result.is_ok() {
                 return result.unwrap();
             } else {
-                return *self.identifiers.get(&root.value).unwrap();
+                return *self
+                    .identifiers
+                    .get(root.value.as_ref().expect("expected an identifier"))
+                    .unwrap();
             }
         }
 
@@ -44,7 +57,7 @@ impl Interpreter {
             .map(|child| self.evaluate_helper(child))
             .collect();
 
-        match root.value.as_str() {
+        match root.value.as_ref().unwrap().as_str() {
             "+" => values.iter().copied().reduce(|acc, el| acc + el).unwrap(),
             "-" => values.iter().copied().reduce(|acc, el| acc - el).unwrap(),
             "*" => values.iter().copied().reduce(|acc, el| acc * el).unwrap(),

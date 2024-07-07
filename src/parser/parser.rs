@@ -13,7 +13,7 @@ Factor -> '(' Expr ')'
         | number
 */
 
-use crate::node::node::Node;
+use crate::node::node::{Node, NodeType};
 use crate::token::token::{Token, TokenType};
 
 pub struct Parser {
@@ -31,7 +31,16 @@ impl Parser {
             print!("  ");
         }
 
-        print!("{}\n", root.value);
+        print!("{:?}", root.node_type);
+        root.value
+            .is_some()
+            .then(|| {
+                print!(": {} \n", root.value.as_ref().unwrap());
+            })
+            .or_else(|| {
+                print!("\n");
+                Some(())
+            });
 
         for child in &root.children {
             self.print_tree(child, level + 1);
@@ -40,7 +49,8 @@ impl Parser {
 
     pub fn parse(&mut self) -> Node {
         let mut root = Node {
-            value: "Expr".to_string(),
+            value: None,
+            node_type: NodeType::Expression,
             children: Vec::new(),
         };
         self.expression(&mut root);
@@ -62,7 +72,8 @@ impl Parser {
         }
 
         let mut term = Node {
-            value: "Term".to_string(),
+            value: None,
+            node_type: NodeType::Term,
             children: Vec::new(),
         };
         self.term(&mut term);
@@ -77,10 +88,12 @@ impl Parser {
         if self.tokens[self.position].token_type == TokenType::Operator {
             match self.peek().value.as_str() {
                 "+" | "-" => {
-                    root.value = self.peek().value.clone();
+                    root.value = Some(self.peek().value.clone());
+
                     self.next();
                     let mut term = Node {
-                        value: "Term".to_string(),
+                        value: None,
+                        node_type: NodeType::Term,
                         children: Vec::new(),
                     };
                     self.term(&mut term);
@@ -96,7 +109,8 @@ impl Parser {
 
     fn term(&mut self, root: &mut Node) {
         let mut factor = Node {
-            value: "Factor".to_string(),
+            value: None,
+            node_type: NodeType::Factor,
             children: Vec::new(),
         };
         self.factor(&mut factor);
@@ -111,10 +125,12 @@ impl Parser {
         if self.peek().token_type == TokenType::Operator {
             match self.peek().value.as_str() {
                 "*" | "/" => {
-                    root.value = self.peek().value.clone();
+                    root.value = Some(self.peek().value.clone());
+
                     self.next();
                     let mut factor = Node {
-                        value: "Factor".to_string(),
+                        value: None,
+                        node_type: NodeType::Factor,
                         children: Vec::new(),
                     };
                     self.factor(&mut factor);
@@ -132,7 +148,8 @@ impl Parser {
         if self.peek().token_type == TokenType::LeftParen {
             self.next();
             let mut expression = Node {
-                value: "Expr".to_string(),
+                value: None,
+                node_type: NodeType::Expression,
                 children: Vec::new(),
             };
             self.expression(&mut expression);
@@ -144,14 +161,16 @@ impl Parser {
             }
         } else if self.peek().token_type == TokenType::Number {
             let node = Node {
-                value: self.peek().value.clone(),
+                value: Some(self.peek().value.clone()),
+                node_type: NodeType::Literal,
                 children: Vec::new(),
             };
             root.children.push(node);
             self.next();
         } else if self.peek().token_type == TokenType::Identifier {
             let node = Node {
-                value: self.peek().value.clone(),
+                value: Some(self.peek().value.clone()),
+                node_type: NodeType::Identifier,
                 children: Vec::new(),
             };
             root.children.push(node);
@@ -162,13 +181,15 @@ impl Parser {
     }
 
     fn assignment(&mut self, root: &mut Node) {
-        root.value = "=".to_string();
+        root.value = Some("=".to_string());
+
         if self.peek().token_type != TokenType::Identifier {
             panic!("Expected identifier");
         };
 
         let node = Node {
-            value: self.peek().value.clone(),
+            value: Some(self.peek().value.clone()),
+            node_type: NodeType::Identifier,
             children: Vec::new(),
         };
         root.children.push(node);
@@ -181,7 +202,8 @@ impl Parser {
         if self.peek().value == "=".to_string() {
             self.next();
             let mut expression = Node {
-                value: "Expr".to_string(),
+                value: None,
+                node_type: NodeType::Expression,
                 children: Vec::new(),
             };
             self.expression(&mut expression);
