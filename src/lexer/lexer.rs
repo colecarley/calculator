@@ -18,6 +18,7 @@ pub struct Lexer {
     state: State,
     buffer: String,
     keywords: Vec<String>,
+    operators: Vec<String>,
 }
 
 impl Lexer {
@@ -28,13 +29,26 @@ impl Lexer {
             state: State::Start,
             buffer: String::new(),
             keywords: vec!["let".to_string()],
+            operators: vec![
+                "+".to_string(),
+                "-".to_string(),
+                "*".to_string(),
+                "/".to_string(),
+                "=".to_string(),
+                "==".to_string(),
+                ">=".to_string(),
+                "<=".to_string(),
+                ">".to_string(),
+                "<".to_string(),
+                "!=".to_string(),
+            ],
         }
     }
 
     pub fn lex(&mut self) -> Vec<Token> {
         use regex::Regex;
         let number = Regex::new(r"\d").unwrap();
-        let operator = Regex::new(r"[+\-*/=]").unwrap();
+        let operator = Regex::new(r"[+\-*/=><!]").unwrap();
         let whitespace = Regex::new(r"\s").unwrap();
         let left_paren = Regex::new(r"\(").unwrap();
         let right_paren = Regex::new(r"\)").unwrap();
@@ -66,6 +80,9 @@ impl Lexer {
         if self.state == State::Alpha {
             return;
         }
+        if self.state == State::Operator {
+            self.push_operator();
+        }
 
         self.state = State::Number;
         self.buffer += &c.to_string();
@@ -80,10 +97,12 @@ impl Lexer {
         }
         self.state = State::Operator;
         self.buffer += &c.to_string();
-        self.push_operator()
     }
 
     fn whitespace(&mut self) {
+        if self.state == State::Operator {
+            self.push_operator();
+        }
         if self.state == State::Alpha {
             self.push_alpha();
         }
@@ -95,6 +114,9 @@ impl Lexer {
     }
 
     fn left_paren(&mut self, c: char) {
+        if self.state == State::Operator {
+            self.push_operator();
+        }
         if self.state == State::Alpha {
             self.push_alpha();
         }
@@ -110,6 +132,9 @@ impl Lexer {
         if self.state == State::Alpha {
             self.push_alpha();
         }
+        if self.state == State::Alpha {
+            self.push_alpha();
+        }
         if self.state == State::Number {
             self.push_number();
         }
@@ -119,6 +144,9 @@ impl Lexer {
     }
 
     fn alpha(&mut self, c: char) {
+        if self.state == State::Operator {
+            self.push_operator();
+        }
         if self.state == State::Number {
             self.push_number();
         }
@@ -144,6 +172,9 @@ impl Lexer {
     }
 
     fn push_operator(&mut self) {
+        if !self.operators.contains(&self.buffer) {
+            panic!("Invalid operator");
+        }
         self.tokens
             .push(Token::new(TokenType::Operator, self.buffer.clone()));
         self.buffer = String::new();

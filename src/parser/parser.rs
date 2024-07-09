@@ -11,6 +11,16 @@ TermTail -> '*' Factor TermTail
          | ε
 Factor -> '(' Expr ')'
         | number
+        | identifier
+        | Equality
+Equality -> Expr EqualityTail
+EqualityTail -> '==' Expr EqualityTail
+             | '!=' Expr EqualityTail
+             | '>' Expr EqualityTail
+             | '>=' Expr EqualityTail
+             | '<' Expr EqualityTail
+             | '<=' Expr EqualityTail
+             | ε
 */
 
 use crate::node::node::{Node, NodeType};
@@ -77,18 +87,25 @@ impl Parser {
             children: Vec::new(),
         };
         self.term(&mut term);
-        root.children.push(term);
-        self.expression_tail(root);
+        self.expression_tail(root, &term);
+        // root.children.push(term);
     }
 
-    fn expression_tail(&mut self, root: &mut Node) {
+    fn expression_tail(&mut self, root: &mut Node, first_term: &Node) {
         if (self.position) >= self.tokens.len() {
+            root.children.push(first_term.clone());
             return;
         }
         if self.tokens[self.position].token_type == TokenType::Operator {
             match self.peek().value.as_str() {
                 "+" | "-" => {
-                    root.value = Some(self.peek().value.clone());
+                    // root.value = Some(self.peek().value.clone());
+                    let mut operator = Node {
+                        value: Some(self.peek().value.clone()),
+                        node_type: NodeType::Operation,
+                        children: Vec::new(),
+                    };
+                    operator.children.push(first_term.clone());
 
                     self.next();
                     let mut term = Node {
@@ -97,8 +114,29 @@ impl Parser {
                         children: Vec::new(),
                     };
                     self.term(&mut term);
-                    root.children.push(term);
-                    self.expression_tail(root);
+                    operator.children.push(term);
+                    self.expression_tail(root, &mut operator);
+                    // root.children.push(operator);
+                }
+                "==" | "!=" | ">" | ">=" | "<" | "<=" => {
+                    let mut operator = Node {
+                        value: Some(self.peek().value.clone()),
+                        node_type: NodeType::Operation,
+                        children: Vec::new(),
+                    };
+
+                    operator.children.push(first_term.clone());
+                    self.next();
+                    let mut term = Node {
+                        value: None,
+                        node_type: NodeType::Term,
+                        children: Vec::new(),
+                    };
+
+                    self.term(&mut term);
+                    operator.children.push(term);
+                    self.expression_tail(root, &mut operator);
+                    // root.children.push(operator);
                 }
                 _ => return,
             }
@@ -114,18 +152,25 @@ impl Parser {
             children: Vec::new(),
         };
         self.factor(&mut factor);
-        root.children.push(factor);
-        self.term_tail(root);
+        self.term_tail(root, &factor);
+        // root.children.push(factor);
     }
 
-    fn term_tail(&mut self, root: &mut Node) {
+    fn term_tail(&mut self, root: &mut Node, first_term: &Node) {
         if (self.position) >= self.tokens.len() {
+            root.children.push(first_term.clone());
             return;
         }
         if self.peek().token_type == TokenType::Operator {
             match self.peek().value.as_str() {
                 "*" | "/" => {
-                    root.value = Some(self.peek().value.clone());
+                    // root.value = Some(self.peek().value.clone());
+                    let mut operator = Node {
+                        value: Some(self.peek().value.clone()),
+                        node_type: NodeType::Operation,
+                        children: Vec::new(),
+                    };
+                    operator.children.push(first_term.clone());
 
                     self.next();
                     let mut factor = Node {
@@ -134,10 +179,10 @@ impl Parser {
                         children: Vec::new(),
                     };
                     self.factor(&mut factor);
-                    root.children.push(factor);
-                    self.term_tail(root);
+                    operator.children.push(factor);
+                    self.term_tail(root, &mut operator);
                 }
-                _ => return,
+                _ => root.children.push(first_term.clone()),
             }
         } else {
             return;

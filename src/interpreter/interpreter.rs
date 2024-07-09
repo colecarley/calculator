@@ -62,6 +62,36 @@ impl Interpreter {
             "-" => values.iter().copied().reduce(|acc, el| acc - el).unwrap(),
             "*" => values.iter().copied().reduce(|acc, el| acc * el).unwrap(),
             "/" => values.iter().copied().reduce(|acc, el| acc / el).unwrap(),
+            "==" => values
+                .iter()
+                .copied()
+                .reduce(|acc, el| (acc == el) as i32)
+                .unwrap(),
+            "!=" => values
+                .iter()
+                .copied()
+                .reduce(|acc, el| (acc != el) as i32)
+                .unwrap(),
+            ">" => values
+                .iter()
+                .copied()
+                .reduce(|acc, el| (acc > el) as i32)
+                .unwrap(),
+            ">=" => values
+                .iter()
+                .copied()
+                .reduce(|acc, el| (acc >= el) as i32)
+                .unwrap(),
+            "<" => values
+                .iter()
+                .copied()
+                .reduce(|acc, el| (acc < el) as i32)
+                .unwrap(),
+            "<=" => values
+                .iter()
+                .copied()
+                .reduce(|acc, el| (acc <= el) as i32)
+                .unwrap(),
             _ => panic!("Invalid operator"),
         }
     }
