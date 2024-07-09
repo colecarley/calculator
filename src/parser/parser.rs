@@ -1,6 +1,12 @@
 /*
 Let -> Keyword Identifier '=' Expr
 
+If -> Keyword Expr '{' Expr '}'
+    | Keyword Expr '{' Expr '}' Else
+
+Else -> Keyword '{' Expr '}'
+    | Keyword If
+
 Expr   -> Term ExprTail
 ExprTail -> '+' Term ExprTail
          | '-' Term ExprTail
@@ -13,14 +19,6 @@ Factor -> '(' Expr ')'
         | number
         | identifier
         | Equality
-Equality -> Expr EqualityTail
-EqualityTail -> '==' Expr EqualityTail
-             | '!=' Expr EqualityTail
-             | '>' Expr EqualityTail
-             | '>=' Expr EqualityTail
-             | '<' Expr EqualityTail
-             | '<=' Expr EqualityTail
-             | ε
 */
 
 use crate::node::node::{Node, NodeType};
@@ -75,6 +73,11 @@ impl Parser {
                     self.assignment(root);
                     return;
                 }
+                "if" => {
+                    self.next();
+                    self.if_statement(root);
+                    return;
+                }
                 _ => {
                     panic!("Invalid keyword");
                 }
@@ -88,7 +91,6 @@ impl Parser {
         };
         self.term(&mut term);
         self.expression_tail(root, &term);
-        // root.children.push(term);
     }
 
     fn expression_tail(&mut self, root: &mut Node, first_term: &Node) {
@@ -99,7 +101,6 @@ impl Parser {
         if self.tokens[self.position].token_type == TokenType::Operator {
             match self.peek().value.as_str() {
                 "+" | "-" => {
-                    // root.value = Some(self.peek().value.clone());
                     let mut operator = Node {
                         value: Some(self.peek().value.clone()),
                         node_type: NodeType::Operation,
@@ -141,7 +142,7 @@ impl Parser {
                 _ => return,
             }
         } else {
-            return;
+            root.children.push(first_term.clone());
         }
     }
 
@@ -153,7 +154,6 @@ impl Parser {
         };
         self.factor(&mut factor);
         self.term_tail(root, &factor);
-        // root.children.push(factor);
     }
 
     fn term_tail(&mut self, root: &mut Node, first_term: &Node) {
@@ -164,7 +164,6 @@ impl Parser {
         if self.peek().token_type == TokenType::Operator {
             match self.peek().value.as_str() {
                 "*" | "/" => {
-                    // root.value = Some(self.peek().value.clone());
                     let mut operator = Node {
                         value: Some(self.peek().value.clone()),
                         node_type: NodeType::Operation,
@@ -185,7 +184,7 @@ impl Parser {
                 _ => root.children.push(first_term.clone()),
             }
         } else {
-            return;
+            root.children.push(first_term.clone());
         }
     }
 
@@ -256,6 +255,77 @@ impl Parser {
         } else {
             panic!("Expected assignment operator");
         }
+    }
+
+    fn if_statement(&mut self, root: &mut Node) {
+        let mut if_statement = Node {
+            value: Some("if".to_string()),
+            node_type: NodeType::If,
+            children: Vec::new(),
+        };
+
+        let mut expression = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut expression);
+
+        if self.peek().token_type != TokenType::LeftBrace {
+            panic!("Expected left brace");
+        }
+
+        self.next();
+
+        let mut block = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut block);
+
+        if self.peek().token_type != TokenType::RightBrace {
+            panic!("Expected right brace");
+        }
+
+        self.next();
+        if_statement.children.push(expression);
+        if_statement.children.push(block);
+
+        if self.peek().token_type == TokenType::Keyword {
+            match self.peek().value.as_str() {
+                "else" => {
+                    self.next();
+                    self.else_statement(&mut if_statement);
+                }
+                _ => panic!("Invalid keyword"),
+            }
+        }
+
+        root.children.push(if_statement);
+    }
+
+    fn else_statement(&mut self, if_statement: &mut Node) {
+        if self.peek().token_type != TokenType::LeftBrace {
+            panic!("Expected left brace");
+        }
+
+        let mut else_block = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.next();
+        self.expression(&mut else_block);
+
+        if self.peek().token_type != TokenType::RightBrace {
+            panic!("Expected right brace");
+        }
+
+        if_statement.children.push(else_block);
     }
 
     fn peek(&self) -> &Token {

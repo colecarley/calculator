@@ -1,12 +1,12 @@
 #[derive(Debug, PartialEq, Clone)]
 pub enum NodeType {
     Expression,
-    Equality,
     Term,
     Factor,
     Identifier,
     Operation,
     Literal,
+    If,
 }
 
 #[derive(Clone)]

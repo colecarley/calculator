@@ -92,6 +92,13 @@ impl Interpreter {
                 .copied()
                 .reduce(|acc, el| (acc <= el) as i32)
                 .unwrap(),
+            "if" => {
+                if values[0] != 0 {
+                    return values[1];
+                } else {
+                    return values[2];
+                }
+            }
             _ => panic!("Invalid operator"),
         }
     }

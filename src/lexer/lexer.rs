@@ -9,6 +9,8 @@ enum State {
     Whitespace,
     LeftParen,
     RightParen,
+    LeftBrace,
+    RightBrace,
     Alpha,
 }
 
@@ -28,7 +30,7 @@ impl Lexer {
             tokens: Vec::new(),
             state: State::Start,
             buffer: String::new(),
-            keywords: vec!["let".to_string()],
+            keywords: vec!["let".to_string(), "if".to_string(), "else".to_string()],
             operators: vec![
                 "+".to_string(),
                 "-".to_string(),
@@ -53,6 +55,8 @@ impl Lexer {
         let left_paren = Regex::new(r"\(").unwrap();
         let right_paren = Regex::new(r"\)").unwrap();
         let alpha = Regex::new(r"[a-zA-Z]").unwrap();
+        let left_brace = Regex::new(r"\{").unwrap();
+        let right_brace = Regex::new(r"\}").unwrap();
 
         let input = self.input.clone();
         for c in input.chars() {
@@ -68,6 +72,10 @@ impl Lexer {
                 self.left_paren(c);
             } else if whitespace.is_match(&c.to_string()) {
                 self.whitespace();
+            } else if left_brace.is_match(&c.to_string()) {
+                self.left_brace(c);
+            } else if right_brace.is_match(&c.to_string()) {
+                self.right_brace(c);
             } else {
                 println!("Invalid character: {}", c);
             }
@@ -143,6 +151,30 @@ impl Lexer {
         self.push_right_paren();
     }
 
+    fn left_brace(&mut self, c: char) {
+        if self.state == State::Operator {
+            self.push_operator();
+        }
+        if self.state == State::Number {
+            self.push_number();
+        }
+        self.state = State::LeftBrace;
+        self.buffer += &c.to_string();
+        self.push_left_brace();
+    }
+
+    fn right_brace(&mut self, c: char) {
+        if self.state == State::Alpha {
+            self.push_alpha();
+        }
+        if self.state == State::Number {
+            self.push_number();
+        }
+        self.state = State::RightBrace;
+        self.buffer += &c.to_string();
+        self.push_right_brace();
+    }
+
     fn alpha(&mut self, c: char) {
         if self.state == State::Operator {
             self.push_operator();
@@ -189,6 +221,18 @@ impl Lexer {
     fn push_right_paren(&mut self) {
         self.tokens
             .push(Token::new(TokenType::RightParen, self.buffer.clone()));
+        self.buffer = String::new();
+    }
+
+    fn push_left_brace(&mut self) {
+        self.tokens
+            .push(Token::new(TokenType::LeftBrace, self.buffer.clone()));
+        self.buffer = String::new();
+    }
+
+    fn push_right_brace(&mut self) {
+        self.tokens
+            .push(Token::new(TokenType::RightBrace, self.buffer.clone()));
         self.buffer = String::new();
     }
 }

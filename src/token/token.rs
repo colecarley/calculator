@@ -6,6 +6,8 @@ pub enum TokenType {
     RightParen,
     Keyword,
     Identifier,
+    LeftBrace,
+    RightBrace,
 }
 
 #[derive(Clone, Debug)]
