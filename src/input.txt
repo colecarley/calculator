@@ -29,37 +29,37 @@ funk gcd(x, y) {
 
 print(gcd(52, 4))
 
-funk factorial_helper(i, x) {
+funk factorialHelper(i, x) {
     if i == 1 {
         x
     } else {
-        factorial_helper(i - 1, x * i)
+        factorialHelper(i - 1, x * i)
     }
 }
 
 funk factorial(x) {
-    factorial_helper(x - 1, x)
+    factorialHelper(x - 1, x)
 }
 
 print(factorial(12))
 
-funk sum_helper(x, acc) {
+funk sumHelper(x, acc) {
     if x == 0 {
         acc
     } else {
-        sum_helper(x - 1, acc + x)
+        sumHelper(x - 1, acc + x)
     }
 }
 
 funk sum(x) {
-    sum_helper(x, 0)
+    sumHelper(x, 0)
 }
 
 let x = 4
-print(sum(x));
+print(sum(x))
 
 
-funk is_even(x) {
+funk isEven(x) {
     if (x % 2) == 0 {
         1
     } else {
@@ -67,5 +67,5 @@ funk is_even(x) {
     }
 }
 
-print(is_even(2))
-print(is_even(1))
+print(isEven(2))
+print(isEven(1))
