@@ -137,19 +137,6 @@ impl Parser {
             }
         }
 
-        // if self.peek().token_type == TokenType::Identifier {
-        //     if (self.position + 1) < self.tokens.len() {
-        //         self.next();
-        //         if self.peek().token_type == TokenType::LeftParen {
-        //             self.prev();
-        //             self.function_call(root);
-        //             return;
-        //         } else {
-        //             self.prev();
-        //         }
-        //     }
-        // }
-
         let mut term = Node {
             value: None,
             node_type: NodeType::Term,
