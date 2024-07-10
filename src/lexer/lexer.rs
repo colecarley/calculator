@@ -62,7 +62,7 @@ impl Lexer {
         let whitespace = Regex::new(r"\s").unwrap();
         let left_paren = Regex::new(r"\(").unwrap();
         let right_paren = Regex::new(r"\)").unwrap();
-        let alpha = Regex::new(r"[a-zA-Z]").unwrap();
+        let alpha = Regex::new(r"[a-zA-Z_]").unwrap();
         let left_brace = Regex::new(r"\{").unwrap();
         let right_brace = Regex::new(r"\}").unwrap();
         let comma: Regex = Regex::new(r",").unwrap();
