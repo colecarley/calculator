@@ -16,10 +16,13 @@ impl Interpreter {
         }
     }
 
-    fn new_with_identifiers(identifiers: HashMap<String, i32>) -> Interpreter {
+    fn new_with_identifiers_and_functions(
+        identifiers: HashMap<String, i32>,
+        functions: HashMap<String, Node>,
+    ) -> Interpreter {
         Interpreter {
             identifiers,
-            functions: HashMap::new(),
+            functions,
         }
     }
 
@@ -28,10 +31,7 @@ impl Interpreter {
     }
 
     fn evaluate_helper(&mut self, root: &Node) -> i32 {
-        if root.node_type == NodeType::Operation
-        // && root.value.is_some()
-        // && root.value.as_ref().unwrap() == "="
-        {
+        if root.node_type == NodeType::Operation {
             match &root.value {
                 Some(val) => match val.clone().as_str() {
                     "=" => {
@@ -59,6 +59,8 @@ impl Interpreter {
                                 .iter()
                                 .map(|child| self.evaluate_helper(child))
                                 .collect();
+
+                            println!("{:?}", values);
 
                             return self.evaluate_function(val.clone(), values);
                         }
@@ -92,6 +94,15 @@ impl Interpreter {
             return self.evaluate_helper(&root.children[0]);
         }
 
+        if root.value.as_ref().unwrap() == "if" {
+            let condition = self.evaluate_helper(&root.children[0]);
+            if condition != 0 {
+                return self.evaluate_helper(&root.children[1]);
+            } else {
+                return self.evaluate_helper(&root.children[2]);
+            }
+        }
+
         let values: Vec<i32> = root
             .children
             .iter()
@@ -103,6 +114,7 @@ impl Interpreter {
             "-" => values.iter().copied().reduce(|acc, el| acc - el).unwrap(),
             "*" => values.iter().copied().reduce(|acc, el| acc * el).unwrap(),
             "/" => values.iter().copied().reduce(|acc, el| acc / el).unwrap(),
+            "%" => values.iter().copied().reduce(|acc, el| acc % el).unwrap(),
             "==" => values
                 .iter()
                 .copied()
@@ -133,13 +145,6 @@ impl Interpreter {
                 .copied()
                 .reduce(|acc, el| (acc <= el) as i32)
                 .unwrap(),
-            "if" => {
-                if values[0] != 0 {
-                    return values[1];
-                } else {
-                    return values[2];
-                }
-            }
             _ => panic!("Invalid operator"),
         }
     }
@@ -164,7 +169,8 @@ impl Interpreter {
             arg_values.insert(arg_name.clone(), parameter_values[i]);
         }
 
-        let mut interpreter = Interpreter::new_with_identifiers(arg_values);
+        let mut interpreter =
+            Interpreter::new_with_identifiers_and_functions(arg_values, self.functions.clone());
 
         let result = interpreter.evaluate(function.children[1].clone());
 

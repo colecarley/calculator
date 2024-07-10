@@ -33,6 +33,13 @@ Factor -> '(' Expr ')'
         | number
         | identifier
         | Equality
+
+List -> '[' ListTail
+ListTail -> Expr ListTailTail
+ListTailTail -> ',' Expr ListTailTail
+            | ']'
+
+
 */
 
 use crate::node::node::{Node, NodeType};
@@ -199,7 +206,7 @@ impl Parser {
         }
         if self.peek().token_type == TokenType::Operator {
             match self.peek().value.as_str() {
-                "*" | "/" => {
+                "*" | "/" | "%" => {
                     let mut operator = Node {
                         value: Some(self.peek().value.clone()),
                         node_type: NodeType::Operation,

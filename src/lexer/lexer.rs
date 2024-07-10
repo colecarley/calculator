@@ -42,6 +42,7 @@ impl Lexer {
                 "-".to_string(),
                 "*".to_string(),
                 "/".to_string(),
+                "%".to_string(),
                 "=".to_string(),
                 "==".to_string(),
                 ">=".to_string(),
@@ -56,7 +57,7 @@ impl Lexer {
     pub fn lex(&mut self) -> Vec<Token> {
         use regex::Regex;
         let number = Regex::new(r"\d").unwrap();
-        let operator = Regex::new(r"[+\-*/=><!]").unwrap();
+        let operator = Regex::new(r"[+\-*/=><!%]").unwrap();
         let whitespace = Regex::new(r"\s").unwrap();
         let left_paren = Regex::new(r"\(").unwrap();
         let right_paren = Regex::new(r"\)").unwrap();
