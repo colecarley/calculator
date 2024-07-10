@@ -8,6 +8,7 @@ pub enum TokenType {
     Identifier,
     LeftBrace,
     RightBrace,
+    Comma,
 }
 
 #[derive(Clone, Debug)]

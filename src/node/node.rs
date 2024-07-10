@@ -7,9 +7,12 @@ pub enum NodeType {
     Operation,
     Literal,
     If,
+    Function,
+    Args,
+    Parameters,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Node {
     pub value: Option<String>,
     pub node_type: NodeType,

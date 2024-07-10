@@ -7,6 +7,20 @@ If -> Keyword Expr '{' Expr '}'
 Else -> Keyword '{' Expr '}'
     | Keyword If
 
+Funk -> Keyword Identifier '(' Args ')' '{' Expr '}'
+
+Args -> Identifier ArgsTail
+    | ε
+ArgsTail -> ',' Identifier ArgsTail
+    | ε
+
+Parameters -> Expr ParametersTail
+    | ε
+ParametersTail -> ',' Expr ParametersTail
+    | ε
+
+FunctionCall -> Identifier '(' A ')'
+
 Expr   -> Term ExprTail
 ExprTail -> '+' Term ExprTail
          | '-' Term ExprTail
@@ -32,6 +46,10 @@ pub struct Parser {
 impl Parser {
     fn next(&mut self) {
         self.position += 1;
+    }
+
+    fn prev(&mut self) {
+        self.position -= 1;
     }
 
     pub fn print_tree(&self, root: &Node, level: usize) {
@@ -78,8 +96,26 @@ impl Parser {
                     self.if_statement(root);
                     return;
                 }
+                "funk" => {
+                    self.next();
+                    self.function_declaration(root);
+                    return;
+                }
                 _ => {
                     panic!("Invalid keyword");
+                }
+            }
+        }
+
+        if self.peek().token_type == TokenType::Identifier {
+            if (self.position + 1) < self.tokens.len() {
+                self.next();
+                if self.peek().token_type == TokenType::LeftParen {
+                    self.prev();
+                    self.function_call(root);
+                    return;
+                } else {
+                    self.prev();
                 }
             }
         }
@@ -333,6 +369,162 @@ impl Parser {
         }
 
         if_statement.children.push(else_block);
+    }
+
+    fn function_declaration(&mut self, root: &mut Node) {
+        let mut operation = Node {
+            value: Some("declaration".to_string()),
+            node_type: NodeType::Operation,
+            children: Vec::new(),
+        };
+
+        if self.peek().token_type != TokenType::Identifier {
+            panic!("Expected identifier, found {:?}", self.peek().token_type);
+        }
+
+        let identifier = Node {
+            value: Some(self.peek().value.clone()),
+            node_type: NodeType::Identifier,
+            children: Vec::new(),
+        };
+
+        operation.children.push(identifier);
+        self.next();
+
+        let mut function = Node {
+            value: None,
+            node_type: NodeType::Function,
+            children: Vec::new(),
+        };
+
+        let mut args = Node {
+            value: None,
+            node_type: NodeType::Args,
+            children: Vec::new(),
+        };
+
+        if self.peek().token_type != TokenType::LeftParen {
+            panic!("Expected left parenthesis");
+        }
+
+        self.next();
+        if self.peek().token_type != TokenType::RightParen {
+            self.args(&mut args);
+        }
+
+        if self.peek().token_type != TokenType::RightParen {
+            panic!("Expected right parenthesis");
+        }
+
+        function.children.push(args);
+
+        self.next();
+
+        if self.peek().token_type != TokenType::LeftBrace {
+            panic!("Expected left brace, found {:?}", self.peek().token_type);
+        }
+
+        self.next();
+
+        // if self.peek().token_type != TokenType::RightParen {
+        //     self.args(&mut operation);
+        // }
+
+        let mut block = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut block);
+
+        if self.peek().token_type != TokenType::RightBrace {
+            panic!("Expected right brace");
+        }
+        self.next();
+
+        function.children.push(block);
+        operation.children.push(function);
+        root.children.push(operation);
+    }
+
+    fn args(&mut self, root: &mut Node) {
+        if self.peek().token_type != TokenType::Identifier {
+            panic!("Expected identifier, found {:?}", self.peek().token_type);
+        }
+
+        let identifier = Node {
+            value: Some(self.peek().value.clone()),
+            node_type: NodeType::Identifier,
+            children: Vec::new(),
+        };
+
+        root.children.push(identifier);
+
+        self.next();
+        self.args_tail(root);
+    }
+
+    fn args_tail(&mut self, root: &mut Node) {
+        if self.peek().token_type != TokenType::Comma {
+            return;
+        }
+
+        self.next();
+        self.args(root);
+    }
+
+    fn function_call(&mut self, root: &mut Node) {
+        let mut operation = Node {
+            value: Some(self.peek().value.clone()),
+            node_type: NodeType::Operation,
+            children: Vec::new(),
+        };
+
+        self.next();
+
+        if self.peek().token_type != TokenType::LeftParen {
+            panic!("Expected left parenthesis");
+        }
+
+        let mut parameters = Node {
+            value: None,
+            node_type: NodeType::Parameters,
+            children: Vec::new(),
+        };
+
+        self.next();
+        self.parameters(&mut parameters);
+
+        if self.peek().token_type != TokenType::RightParen {
+            panic!("Expected right parenthesis");
+        }
+
+        self.next();
+
+        operation.children.push(parameters);
+        root.children.push(operation);
+    }
+
+    fn parameters(&mut self, root: &mut Node) {
+        let mut expression = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut expression);
+        root.children.push(expression);
+        self.parameters_tail(root);
+    }
+
+    fn parameters_tail(&mut self, root: &mut Node) {
+        if self.peek().token_type != TokenType::Comma {
+            return;
+        }
+
+        self.next();
+        self.parameters(root);
     }
 
     fn peek(&self) -> &Token {

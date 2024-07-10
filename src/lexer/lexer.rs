@@ -12,6 +12,7 @@ enum State {
     LeftBrace,
     RightBrace,
     Alpha,
+    Comma,
 }
 
 pub struct Lexer {
@@ -30,7 +31,12 @@ impl Lexer {
             tokens: Vec::new(),
             state: State::Start,
             buffer: String::new(),
-            keywords: vec!["let".to_string(), "if".to_string(), "else".to_string()],
+            keywords: vec![
+                "let".to_string(),
+                "if".to_string(),
+                "else".to_string(),
+                "funk".to_string(),
+            ],
             operators: vec![
                 "+".to_string(),
                 "-".to_string(),
@@ -57,6 +63,7 @@ impl Lexer {
         let alpha = Regex::new(r"[a-zA-Z]").unwrap();
         let left_brace = Regex::new(r"\{").unwrap();
         let right_brace = Regex::new(r"\}").unwrap();
+        let comma: Regex = Regex::new(r",").unwrap();
 
         let input = self.input.clone();
         for c in input.chars() {
@@ -76,6 +83,8 @@ impl Lexer {
                 self.left_brace(c);
             } else if right_brace.is_match(&c.to_string()) {
                 self.right_brace(c);
+            } else if comma.is_match(&c.to_string()) {
+                self.comma(c);
             } else {
                 println!("Invalid character: {}", c);
             }
@@ -140,9 +149,6 @@ impl Lexer {
         if self.state == State::Alpha {
             self.push_alpha();
         }
-        if self.state == State::Alpha {
-            self.push_alpha();
-        }
         if self.state == State::Number {
             self.push_number();
         }
@@ -173,6 +179,18 @@ impl Lexer {
         self.state = State::RightBrace;
         self.buffer += &c.to_string();
         self.push_right_brace();
+    }
+
+    fn comma(&mut self, c: char) {
+        if self.state == State::Alpha {
+            self.push_alpha();
+        }
+        if self.state == State::Number {
+            self.push_number();
+        }
+        self.state = State::Comma;
+        self.buffer += &c.to_string();
+        self.push_comma();
     }
 
     fn alpha(&mut self, c: char) {
@@ -233,6 +251,12 @@ impl Lexer {
     fn push_right_brace(&mut self) {
         self.tokens
             .push(Token::new(TokenType::RightBrace, self.buffer.clone()));
+        self.buffer = String::new();
+    }
+
+    fn push_comma(&mut self) {
+        self.tokens
+            .push(Token::new(TokenType::Comma, self.buffer.clone()));
         self.buffer = String::new();
     }
 }
