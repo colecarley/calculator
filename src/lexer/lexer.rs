@@ -11,6 +11,8 @@ enum State {
     RightParen,
     LeftBrace,
     RightBrace,
+    LeftBracket,
+    RightBracket,
     Alpha,
     Comma,
 }
@@ -36,6 +38,10 @@ impl Lexer {
                 "if".to_string(),
                 "else".to_string(),
                 "funk".to_string(),
+                "head".to_string(),
+                "tail".to_string(),
+                "len".to_string(),
+                "print".to_string(),
             ],
             operators: vec![
                 "+".to_string(),
@@ -59,11 +65,13 @@ impl Lexer {
         let number = Regex::new(r"\d").unwrap();
         let operator = Regex::new(r"[+\-*/=><!%]").unwrap();
         let whitespace = Regex::new(r"\s").unwrap();
+        let alpha = Regex::new(r"[a-zA-Z]").unwrap();
         let left_paren = Regex::new(r"\(").unwrap();
         let right_paren = Regex::new(r"\)").unwrap();
-        let alpha = Regex::new(r"[a-zA-Z]").unwrap();
         let left_brace = Regex::new(r"\{").unwrap();
         let right_brace = Regex::new(r"\}").unwrap();
+        let left_bracket = Regex::new(r"\[").unwrap();
+        let right_bracket = Regex::new(r"\]").unwrap();
         let comma: Regex = Regex::new(r",").unwrap();
 
         let input = self.input.clone();
@@ -86,6 +94,10 @@ impl Lexer {
                 self.right_brace(c);
             } else if comma.is_match(&c.to_string()) {
                 self.comma(c);
+            } else if left_bracket.is_match(&c.to_string()) {
+                self.left_bracket(c);
+            } else if right_bracket.is_match(&c.to_string()) {
+                self.right_bracket(c);
             } else {
                 println!("Invalid character: {}", c);
             }
@@ -182,6 +194,30 @@ impl Lexer {
         self.push_right_brace();
     }
 
+    fn left_bracket(&mut self, c: char) {
+        if self.state == State::Alpha {
+            self.push_alpha();
+        }
+        if self.state == State::Number {
+            self.push_number();
+        }
+        self.state = State::LeftBracket;
+        self.buffer += &c.to_string();
+        self.push_left_bracket();
+    }
+
+    fn right_bracket(&mut self, c: char) {
+        if self.state == State::Alpha {
+            self.push_alpha();
+        }
+        if self.state == State::Number {
+            self.push_number();
+        }
+        self.state = State::RightBracket;
+        self.buffer += &c.to_string();
+        self.push_right_bracket();
+    }
+
     fn comma(&mut self, c: char) {
         if self.state == State::Alpha {
             self.push_alpha();
@@ -252,6 +288,18 @@ impl Lexer {
     fn push_right_brace(&mut self) {
         self.tokens
             .push(Token::new(TokenType::RightBrace, self.buffer.clone()));
+        self.buffer = String::new();
+    }
+
+    fn push_left_bracket(&mut self) {
+        self.tokens
+            .push(Token::new(TokenType::LeftBracket, self.buffer.clone()));
+        self.buffer = String::new();
+    }
+
+    fn push_right_bracket(&mut self) {
+        self.tokens
+            .push(Token::new(TokenType::RightBracket, self.buffer.clone()));
         self.buffer = String::new();
     }
 

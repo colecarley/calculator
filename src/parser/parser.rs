@@ -39,7 +39,7 @@ ListTail -> Expr ListTailTail
 ListTailTail -> ',' Expr ListTailTail
             | ']'
 
-
+Index -> Identifier '[' Expr ']'
 */
 
 use crate::node::node::{Node, NodeType};
@@ -108,6 +108,22 @@ impl Parser {
                     self.function_declaration(root);
                     return;
                 }
+                "head" => {
+                    self.function_call(root);
+                    return;
+                }
+                "len" => {
+                    self.function_call(root);
+                    return;
+                }
+                "print" => {
+                    self.function_call(root);
+                    return;
+                }
+                "tail" => {
+                    self.function_call(root);
+                    return;
+                }
                 _ => {
                     panic!("Invalid keyword");
                 }
@@ -120,6 +136,16 @@ impl Parser {
                 if self.peek().token_type == TokenType::LeftParen {
                     self.prev();
                     self.function_call(root);
+                    return;
+                } else if self.peek().token_type == TokenType::LeftBracket {
+                    let mut node = Node {
+                        value: None,
+                        node_type: NodeType::ArrayIndex,
+                        children: Vec::new(),
+                    };
+                    self.prev();
+                    self.array_index(&mut node);
+                    root.children.push(node);
                     return;
                 } else {
                     self.prev();
@@ -294,17 +320,55 @@ impl Parser {
 
         if self.peek().value == "=".to_string() {
             self.next();
-            let mut expression = Node {
-                value: None,
-                node_type: NodeType::Expression,
-                children: Vec::new(),
-            };
-            self.expression(&mut expression);
-            operation.children.push(expression);
+
+            if self.peek().token_type == TokenType::LeftBracket {
+                let mut list = Node {
+                    value: None,
+                    node_type: NodeType::List,
+                    children: Vec::new(),
+                };
+
+                self.next();
+                self.list(&mut list);
+
+                if self.peek().token_type != TokenType::RightBracket {
+                    panic!("Expected right bracket");
+                }
+                operation.children.push(list);
+            } else {
+                let mut expression = Node {
+                    value: None,
+                    node_type: NodeType::Expression,
+                    children: Vec::new(),
+                };
+                self.expression(&mut expression);
+                operation.children.push(expression);
+            }
             root.children.push(operation);
         } else {
             panic!("Expected assignment operator");
         }
+    }
+
+    fn list(&mut self, root: &mut Node) {
+        let mut expression = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut expression);
+        root.children.push(expression);
+        self.list_tail(root);
+    }
+
+    fn list_tail(&mut self, root: &mut Node) {
+        if self.peek().token_type != TokenType::Comma {
+            return;
+        }
+
+        self.next();
+        self.list(root);
     }
 
     fn if_statement(&mut self, root: &mut Node) {
@@ -532,6 +596,43 @@ impl Parser {
 
         self.next();
         self.parameters(root);
+    }
+
+    fn array_index(&mut self, root: &mut Node) {
+        if self.peek().token_type != TokenType::Identifier {
+            panic!("Expected identifier, found {:?}", self.peek().token_type);
+        }
+
+        let identifier = Node {
+            value: Some(self.peek().value.clone()),
+            node_type: NodeType::Identifier,
+            children: Vec::new(),
+        };
+
+        root.children.push(identifier);
+
+        self.next();
+
+        if self.peek().token_type != TokenType::LeftBracket {
+            panic!("Expected left bracket");
+        }
+
+        self.next();
+
+        let mut expression = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut expression);
+        root.children.push(expression);
+
+        if self.peek().token_type != TokenType::RightBracket {
+            panic!("Expected right bracket");
+        }
+
+        self.next();
     }
 
     fn peek(&self) -> &Token {

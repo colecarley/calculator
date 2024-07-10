@@ -8,6 +8,8 @@ pub enum TokenType {
     Identifier,
     LeftBrace,
     RightBrace,
+    LeftBracket,
+    RightBracket,
     Comma,
 }
 
