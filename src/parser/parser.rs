@@ -1,4 +1,14 @@
 /*
+
+Program -> Statement Program
+    | ε
+
+Statement -> Let
+    | If
+    | Funk
+    | Expr
+    | FunctionCall
+
 Let -> Keyword Identifier '=' Expr
 
 If -> Keyword Expr '{' Expr '}'
@@ -32,6 +42,7 @@ TermTail -> '*' Factor TermTail
 Factor -> '(' Expr ')'
         | number
         | identifier
+        | functionCall
         | Equality
 
 List -> '[' ListTail
@@ -83,10 +94,18 @@ impl Parser {
     pub fn parse(&mut self) -> Node {
         let mut root = Node {
             value: None,
-            node_type: NodeType::Expression,
+            node_type: NodeType::Program,
             children: Vec::new(),
         };
-        self.expression(&mut root);
+        while self.position < self.tokens.len() {
+            let mut expression = Node {
+                value: None,
+                node_type: NodeType::Expression,
+                children: Vec::new(),
+            };
+            self.expression(&mut expression);
+            root.children.push(expression);
+        }
         return root;
     }
 
@@ -108,24 +127,28 @@ impl Parser {
                     self.function_declaration(root);
                     return;
                 }
+                "print" => {
+                    self.function_call(root);
+                    return;
+                }
                 _ => {
                     panic!("Invalid keyword");
                 }
             }
         }
 
-        if self.peek().token_type == TokenType::Identifier {
-            if (self.position + 1) < self.tokens.len() {
-                self.next();
-                if self.peek().token_type == TokenType::LeftParen {
-                    self.prev();
-                    self.function_call(root);
-                    return;
-                } else {
-                    self.prev();
-                }
-            }
-        }
+        // if self.peek().token_type == TokenType::Identifier {
+        //     if (self.position + 1) < self.tokens.len() {
+        //         self.next();
+        //         if self.peek().token_type == TokenType::LeftParen {
+        //             self.prev();
+        //             self.function_call(root);
+        //             return;
+        //         } else {
+        //             self.prev();
+        //         }
+        //     }
+        // }
 
         let mut term = Node {
             value: None,
@@ -255,13 +278,22 @@ impl Parser {
             root.children.push(node);
             self.next();
         } else if self.peek().token_type == TokenType::Identifier {
-            let node = Node {
-                value: Some(self.peek().value.clone()),
-                node_type: NodeType::Identifier,
-                children: Vec::new(),
-            };
-            root.children.push(node);
-            self.next();
+            if (self.position + 1) < self.tokens.len() {
+                self.next();
+                if self.peek().token_type == TokenType::LeftParen {
+                    self.prev();
+                    self.function_call(root);
+                } else {
+                    self.prev();
+                    let node = Node {
+                        value: Some(self.peek().value.clone()),
+                        node_type: NodeType::Identifier,
+                        children: Vec::new(),
+                    };
+                    root.children.push(node);
+                    self.next();
+                }
+            }
         } else {
             panic!("Invalid factor");
         }
@@ -372,8 +404,10 @@ impl Parser {
         self.expression(&mut else_block);
 
         if self.peek().token_type != TokenType::RightBrace {
-            panic!("Expected right brace");
+            panic!("Expected right brace, found {:?}", self.peek().token_type);
         }
+
+        self.next();
 
         if_statement.children.push(else_block);
     }
@@ -433,10 +467,6 @@ impl Parser {
 
         self.next();
 
-        // if self.peek().token_type != TokenType::RightParen {
-        //     self.args(&mut operation);
-        // }
-
         let mut block = Node {
             value: None,
             node_type: NodeType::Expression,
@@ -446,7 +476,11 @@ impl Parser {
         self.expression(&mut block);
 
         if self.peek().token_type != TokenType::RightBrace {
-            panic!("Expected right brace");
+            panic!(
+                "Expected right brace, found {:?} with value {}",
+                self.peek().token_type,
+                self.peek().value
+            );
         }
         self.next();
 

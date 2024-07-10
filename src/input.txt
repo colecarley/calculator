@@ -1,0 +1,71 @@
+
+funk fib(n) {
+    if n == 0 {
+        1
+    } else {
+        if n == 1 {
+            1
+        } else {
+            fib(n - 1) + fib(n - 2)
+        }
+    }
+}
+
+print(fib(5))
+
+funk double(x) {
+    x * 2
+}
+
+print(double(15))
+
+funk gcd(x, y) {
+    if x == 0 {
+        y
+    } else {
+        gcd(y % x, x)
+    }
+}
+
+print(gcd(52, 4))
+
+funk factorial_helper(i, x) {
+    if i == 1 {
+        x
+    } else {
+        factorial_helper(i - 1, x * i)
+    }
+}
+
+funk factorial(x) {
+    factorial_helper(x - 1, x)
+}
+
+print(factorial(12))
+
+funk sum_helper(x, acc) {
+    if x == 0 {
+        acc
+    } else {
+        sum_helper(x - 1, acc + x)
+    }
+}
+
+funk sum(x) {
+    sum_helper(x, 0)
+}
+
+let x = 4
+print(sum(x));
+
+
+funk is_even(x) {
+    if (x % 2) == 0 {
+        1
+    } else {
+        0
+    }
+}
+
+print(is_even(2))
+print(is_even(1))

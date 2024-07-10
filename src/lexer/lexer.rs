@@ -36,6 +36,7 @@ impl Lexer {
                 "if".to_string(),
                 "else".to_string(),
                 "funk".to_string(),
+                "print".to_string(),
             ],
             operators: vec![
                 "+".to_string(),

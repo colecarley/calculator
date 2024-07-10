@@ -10,6 +10,7 @@ pub enum NodeType {
     Function,
     Args,
     Parameters,
+    Program,
 }
 
 #[derive(Debug, Clone)]

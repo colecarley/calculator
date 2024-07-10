@@ -27,7 +27,11 @@ impl Interpreter {
     }
 
     pub fn evaluate(&mut self, root: Node) -> i32 {
-        return self.evaluate_helper(&root);
+        let mut result = 0;
+        for child in &root.children {
+            result = self.evaluate_helper(child);
+        }
+        result
     }
 
     fn evaluate_helper(&mut self, root: &Node) -> i32 {
@@ -52,6 +56,11 @@ impl Interpreter {
                             .insert(identifier.clone(), root.children[1].clone());
                         return 1;
                     }
+                    "print" => {
+                        let value = self.evaluate_helper(&root.children[0]);
+                        println!("{:?}", value);
+                        return value;
+                    }
                     _ => {
                         if self.functions.contains_key(val) {
                             let values: Vec<i32> = root.children[0]
@@ -59,8 +68,6 @@ impl Interpreter {
                                 .iter()
                                 .map(|child| self.evaluate_helper(child))
                                 .collect();
-
-                            println!("{:?}", values);
 
                             return self.evaluate_function(val.clone(), values);
                         }
