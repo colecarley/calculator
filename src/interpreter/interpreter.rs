@@ -94,7 +94,7 @@ impl Interpreter {
             return self.evaluate_helper(&root.children[0]);
         }
 
-        if root.value.as_ref().unwrap() == "if" {
+        if root.node_type == NodeType::If {
             let condition = self.evaluate_helper(&root.children[0]);
             if condition != 0 {
                 return self.evaluate_helper(&root.children[1]);
