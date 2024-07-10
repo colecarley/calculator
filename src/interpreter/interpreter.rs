@@ -18,7 +18,7 @@ impl Interpreter {
     }
 
     fn evaluate_helper(&mut self, root: &Node) -> i32 {
-        if root.node_type == NodeType::Expression
+        if root.node_type == NodeType::Operation
             && root.value.is_some()
             && root.value.as_ref().unwrap() == "="
         {
@@ -42,7 +42,11 @@ impl Interpreter {
             } else {
                 return *self
                     .identifiers
-                    .get(root.value.as_ref().expect("expected an identifier"))
+                    .get(
+                        root.value
+                            .as_ref()
+                            .expect("expected an identifier for value"),
+                    )
                     .unwrap();
             }
         }

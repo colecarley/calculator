@@ -225,10 +225,16 @@ impl Parser {
     }
 
     fn assignment(&mut self, root: &mut Node) {
-        root.value = Some("=".to_string());
+        // root.value = Some("=".to_string());
+
+        let mut operation = Node {
+            value: Some("=".to_string()),
+            node_type: NodeType::Operation,
+            children: Vec::new(),
+        };
 
         if self.peek().token_type != TokenType::Identifier {
-            panic!("Expected identifier");
+            panic!("Expected identifier, found {:?}", self.peek().token_type);
         };
 
         let node = Node {
@@ -236,7 +242,7 @@ impl Parser {
             node_type: NodeType::Identifier,
             children: Vec::new(),
         };
-        root.children.push(node);
+        operation.children.push(node);
         self.next();
 
         if self.peek().token_type != TokenType::Operator {
@@ -251,7 +257,8 @@ impl Parser {
                 children: Vec::new(),
             };
             self.expression(&mut expression);
-            root.children.push(expression);
+            operation.children.push(expression);
+            root.children.push(operation);
         } else {
             panic!("Expected assignment operator");
         }
