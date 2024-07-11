@@ -164,6 +164,7 @@ impl Interpreter {
                 None => {}
             }
         }
+
         if root.node_type == NodeType::Block {
             for child in root.children.iter().take(root.children.len() - 1) {
                 self.evaluate_helper(child);
@@ -186,6 +187,9 @@ impl Interpreter {
         }
 
         if root.children.len() == 1 {
+            if root.node_type == NodeType::Return {
+                println!("return");
+            }
             return self.evaluate_helper(&root.children[0]);
         }
 

@@ -149,8 +149,10 @@ impl Parser {
                     self.function_call(root);
                     return;
                 }
-                "true" | "false" | "is_bool" | "is_number" | "is_string" | "is_list" | "type"
-                | "head" | "tail" | "len" | "input" | "is_function" => {}
+                "true" | "false" => {}
+                "return" => {}
+                "is_bool" | "is_number" | "is_string" | "is_list" | "type" | "head" | "tail"
+                | "len" | "input" | "is_function" => {}
                 _ => {
                     // panic!("Invalid keyword");
                     self.error(self.peek().clone(), "Invalid keyword");
@@ -321,6 +323,31 @@ impl Parser {
                     root.children.push(node);
                     self.next();
                 }
+                "return" => {
+                    let mut return_node = Node {
+                        value: None,
+                        node_type: NodeType::Return,
+                        children: Vec::new(),
+                    };
+                    self.next();
+                    if self.peek().token_type == TokenType::RightBracket {
+                        let null = Node {
+                            value: None,
+                            node_type: NodeType::Null,
+                            children: Vec::new(),
+                        };
+                        return_node.children.push(null);
+                    } else {
+                        let mut expression = Node {
+                            value: None,
+                            node_type: NodeType::Expression,
+                            children: Vec::new(),
+                        };
+                        self.expression(&mut expression);
+                        return_node.children.push(expression);
+                    }
+                    root.children.push(return_node);
+                }
                 "is_bool" | "is_number" | "is_string" | "is_list" | "type" | "head" | "tail"
                 | "len" | "input" | "is_function" => self.function_call(root),
                 _ => self.error(self.peek().clone(), "Invalid keyword"),
@@ -467,7 +494,7 @@ impl Parser {
                         self.next();
                         self.else_statement(&mut if_statement);
                     }
-                    _ => self.error(self.peek().clone(), "Invalid keyword"),
+                    _ => {}
                 }
             }
         }

@@ -37,3 +37,21 @@ if true {
 } else {
     println("it is false")
 }
+
+funk test_early_return() {
+    if true {
+        println("1")
+        return 3
+    }
+    if true {
+        println("2")
+    }  
+    if true {
+        println("3")
+    }
+    if true {
+        println("4")
+    }
+}
+
+test_early_return()

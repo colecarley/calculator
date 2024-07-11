@@ -54,6 +54,7 @@ impl Lexer {
                 "is_list".to_string(),
                 "is_function".to_string(),
                 "input".to_string(),
+                "return".to_string(),
             ],
             operators: vec![
                 "+".to_string(),
