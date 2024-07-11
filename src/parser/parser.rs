@@ -44,6 +44,10 @@ Factor -> '(' Expr ')'
         | identifier
         | functionCall
         | Equality
+        | String
+        | Boolean
+        | Index
+        | List
 
 List -> '[' ListTail
 ListTail -> Expr ListTailTail
@@ -110,6 +114,7 @@ impl Parser {
     }
 
     fn expression(&mut self, root: &mut Node) {
+        println!("expression");
         if self.peek().token_type == TokenType::Keyword {
             match self.peek().value.as_str() {
                 "let" => {
@@ -128,6 +133,10 @@ impl Parser {
                     return;
                 }
                 "print" => {
+                    self.function_call(root);
+                    return;
+                }
+                "println" => {
                     self.function_call(root);
                     return;
                 }
@@ -278,7 +287,7 @@ impl Parser {
                         children: Vec::new(),
                     };
                     self.prev();
-                    self.array_index(&mut node);
+                    self.index(&mut node);
                     root.children.push(node);
                 } else {
                     self.prev();
@@ -312,6 +321,15 @@ impl Parser {
             };
             root.children.push(node);
             self.next();
+        } else if self.peek().token_type == TokenType::LeftBracket {
+            let mut list = Node {
+                value: None,
+                node_type: NodeType::List,
+                children: Vec::new(),
+            };
+            self.next();
+            self.list(&mut list);
+            root.children.push(list);
         } else {
             panic!("Invalid factor, found {:?}", self.peek().token_type);
         }
@@ -355,6 +373,40 @@ impl Parser {
         } else {
             panic!("Expected assignment operator");
         }
+    }
+
+    fn list(&mut self, root: &mut Node) {
+        let mut expression = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut expression);
+        root.children.push(expression);
+        self.list_tail(root);
+    }
+
+    fn list_tail(&mut self, root: &mut Node) {
+        if self.peek().token_type == TokenType::RightBracket {
+            self.next();
+            return;
+        }
+
+        if self.peek().token_type != TokenType::Comma {
+            panic!("Expected comma");
+        }
+
+        self.next();
+        let mut expression = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut expression);
+        root.children.push(expression);
+        self.list_tail(root);
     }
 
     fn if_statement(&mut self, root: &mut Node) {
@@ -590,7 +642,7 @@ impl Parser {
         self.parameters(root);
     }
 
-    fn array_index(&mut self, root: &mut Node) {
+    fn index(&mut self, root: &mut Node) {
         if self.peek().token_type != TokenType::Identifier {
             panic!("Expected identifier, found {:?}", self.peek().token_type);
         }

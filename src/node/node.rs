@@ -12,6 +12,7 @@ pub enum NodeType {
     Parameters,
     Program,
     Index,
+    List,
 }
 
 #[derive(Debug, Clone)]

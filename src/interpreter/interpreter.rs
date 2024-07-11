@@ -64,6 +64,12 @@ impl Interpreter {
                         self.print_value(&value);
                         return value;
                     }
+                    "println" => {
+                        let value = self.evaluate_helper(&root.children[0]);
+                        self.print_value(&value);
+                        println!();
+                        return value;
+                    }
                     _ => {
                         if self.functions.contains_key(val) {
                             let values: Vec<Value> = root.children[0]
@@ -103,7 +109,7 @@ impl Interpreter {
         }
 
         if root.node_type == NodeType::Index {
-            let list_name = root.children[0]
+            let indexable_name = root.children[0]
                 .value
                 .as_ref()
                 .expect("expected an identifier for value");
@@ -114,22 +120,31 @@ impl Interpreter {
                 panic!("Expected a number");
             };
 
-            let string = self.identifiers.get(list_name).unwrap();
-            if let Value::String(string) = string {
+            let indexable = self
+                .identifiers
+                .get(indexable_name)
+                .expect("expected an known identifier");
+            if let Value::String(string) = indexable {
                 return Value::String(
                     (string.as_bytes()[index as usize].clone() as char).to_string(),
                 );
+            }
+            if let Value::List(list) = indexable {
+                return list[index as usize].clone();
             } else {
-                panic!("Expected a list");
+                panic!("Expected a string or a list");
             }
         }
-
 
         let values: Vec<Value> = root
             .children
             .iter()
             .map(|child| self.evaluate_helper(child))
             .collect();
+
+        if root.node_type == NodeType::List {
+            return Value::List(values);
+        }
 
         match root.value.as_ref().unwrap().as_str() {
             "+" => {
@@ -144,6 +159,14 @@ impl Interpreter {
                         return Value::String(format!("{}{}", first, second));
                     } else {
                         panic!("Expected a string");
+                    }
+                } else if let Value::List(first) = &values[0] {
+                    if let Value::List(second) = &values[1] {
+                        let mut result = first.clone();
+                        result.extend(second.clone());
+                        return Value::List(result);
+                    } else {
+                        panic!("Expected a list");
                     }
                 } else {
                     panic!("Expected a number");
@@ -346,10 +369,20 @@ impl Interpreter {
 
     fn print_value(&self, value: &Value) {
         match value {
-            Value::Number(val) => println!("{}", val),
-            Value::Float(val) => println!("{}", val),
-            Value::String(val) => println!("\"{}\"", val),
-            Value::Boolean(val) => println!("{}", val),
+            Value::Number(val) => print!("{}", val),
+            Value::Float(val) => print!("{}", val),
+            Value::String(val) => print!("\"{}\"", val),
+            Value::Boolean(val) => print!("{}", val),
+            Value::List(val) => {
+                print!("[");
+                for (i, v) in val.iter().enumerate() {
+                    self.print_value(v);
+                    if i < val.len() - 1 {
+                        print!(", ");
+                    }
+                }
+                print!("]");
+            }
             _ => panic!("Invalid value"),
         }
     }

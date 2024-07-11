@@ -11,13 +11,13 @@ funk fib(n) {
     }
 }
 
-print(fib(5))
+println(fib(5))
 
 funk double(x) {
     x * 2
 }
 
-print(double(15))
+println(double(15))
 
 funk gcd(x, y) {
     if x == 0 {
@@ -27,7 +27,7 @@ funk gcd(x, y) {
     }
 }
 
-print(gcd(52, 4))
+println(gcd(52, 4))
 
 funk factorial_helper(i, x) {
     if i == 1 {
@@ -41,7 +41,7 @@ funk factorial(x) {
     factorial_helper(x - 1, x)
 }
 
-print(factorial(12))
+println(factorial(12))
 
 funk sum_helper(x, acc) {
     if x == 0 {
@@ -56,7 +56,7 @@ funk sum(x) {
 }
 
 let x = 4
-print(sum(x))
+println(sum(x))
 
 
 funk is_even(x) {
@@ -67,35 +67,52 @@ funk is_even(x) {
     }
 }
 
-print(is_even(2))
-print(is_even(1))
+println(is_even(2))
+println(is_even(1))
 
-print(true)
-print(false)
+println(true)
+println(false)
 
-print("hello")
+println("hello")
 
 let foo = 1
-print(foo)
+println(foo)
 
 funk return_true() {
     true
 }
 
-print(return_true())
+println(return_true())
 
 funk return_string() {
     "this is a string"
 }
 
-print(return_string())
-print("foo" + "shoe")
+println(return_string())
+println("foo" + "shoe")
 
-print("foo" == "foo")
+println("foo" == "foo")
 
 
 print(true != true)
 
 let foo = "foobar"
-print(foo[0])
+println(foo[0])
 
+let foo = [1,2,3]
+println(foo)
+
+println(foo[0])
+
+println(foo[1])
+
+
+funk create_array(x, y, z) {
+    [x, y, z]
+}
+
+print("creating array: ")
+
+let shoebar = create_array(1,2,3)
+
+println(shoebar);
