@@ -9,6 +9,17 @@ pub enum TokenType {
     LeftBrace,
     RightBrace,
     Comma,
+    String,
+}
+
+#[derive(Clone, Debug)]
+pub enum Value {
+    Number(i32),
+    Identifier(String),
+    String(String),
+    Boolean(bool),
+    Float(f32),
+    List(Vec<Value>),
 }
 
 #[derive(Clone, Debug)]

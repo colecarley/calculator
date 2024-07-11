@@ -13,6 +13,7 @@ enum State {
     RightBrace,
     Alpha,
     Comma,
+    String,
 }
 
 pub struct Lexer {
@@ -37,6 +38,8 @@ impl Lexer {
                 "else".to_string(),
                 "funk".to_string(),
                 "print".to_string(),
+                "true".to_string(),
+                "false".to_string(),
             ],
             operators: vec![
                 "+".to_string(),
@@ -66,6 +69,7 @@ impl Lexer {
         let left_brace = Regex::new(r"\{").unwrap();
         let right_brace = Regex::new(r"\}").unwrap();
         let comma: Regex = Regex::new(r",").unwrap();
+        let string: Regex = Regex::new(r#"""#).unwrap();
 
         let input = self.input.clone();
         for c in input.chars() {
@@ -87,6 +91,8 @@ impl Lexer {
                 self.right_brace(c);
             } else if comma.is_match(&c.to_string()) {
                 self.comma(c);
+            } else if string.is_match(&c.to_string()) {
+                self.string(c);
             } else {
                 println!("Invalid character: {}", c);
             }
@@ -119,6 +125,10 @@ impl Lexer {
     }
 
     fn whitespace(&mut self) {
+        if self.state == State::String {
+            self.buffer += " ";
+            return;
+        }
         if self.state == State::Operator {
             self.push_operator();
         }
@@ -202,7 +212,30 @@ impl Lexer {
         if self.state == State::Number {
             self.push_number();
         }
+        if self.state == State::String {
+            self.buffer += &c.to_string();
+            return;
+        }
         self.state = State::Alpha;
+        self.buffer += &c.to_string();
+    }
+
+    fn string(&mut self, c: char) {
+        if self.state == State::Alpha {
+            self.push_alpha();
+        }
+        if self.state == State::Number {
+            self.push_number();
+        }
+        if self.state == State::Operator {
+            self.push_operator();
+        }
+        if self.state == State::String {
+            self.buffer += &c.to_string();
+            self.push_string();
+            return;
+        }
+        self.state = State::String;
         self.buffer += &c.to_string();
     }
 
@@ -225,7 +258,7 @@ impl Lexer {
 
     fn push_operator(&mut self) {
         if !self.operators.contains(&self.buffer) {
-            panic!("Invalid operator");
+            panic!("Invalid operator: {}", self.buffer,);
         }
         self.tokens
             .push(Token::new(TokenType::Operator, self.buffer.clone()));
@@ -260,5 +293,12 @@ impl Lexer {
         self.tokens
             .push(Token::new(TokenType::Comma, self.buffer.clone()));
         self.buffer = String::new();
+    }
+
+    fn push_string(&mut self) {
+        self.tokens
+            .push(Token::new(TokenType::String, self.buffer.clone()));
+        self.buffer = String::new();
+        self.state = State::Start;
     }
 }

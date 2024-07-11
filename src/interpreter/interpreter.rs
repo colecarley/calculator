@@ -1,10 +1,13 @@
 use core::panic;
 use std::collections::HashMap;
 
-use crate::node::node::{Node, NodeType};
+use crate::{
+    node::node::{Node, NodeType},
+    token::token::Value,
+};
 
 pub struct Interpreter {
-    identifiers: HashMap<String, i32>,
+    identifiers: HashMap<String, Value>,
     functions: HashMap<String, Node>,
 }
 
@@ -17,7 +20,7 @@ impl Interpreter {
     }
 
     fn new_with_identifiers_and_functions(
-        identifiers: HashMap<String, i32>,
+        identifiers: HashMap<String, Value>,
         functions: HashMap<String, Node>,
     ) -> Interpreter {
         Interpreter {
@@ -26,15 +29,15 @@ impl Interpreter {
         }
     }
 
-    pub fn evaluate(&mut self, root: Node) -> i32 {
-        let mut result = 0;
+    pub fn evaluate(&mut self, root: Node) -> Value {
+        let mut result = Value::Number(0);
         for child in &root.children {
             result = self.evaluate_helper(child);
         }
         result
     }
 
-    fn evaluate_helper(&mut self, root: &Node) -> i32 {
+    fn evaluate_helper(&mut self, root: &Node) -> Value {
         if root.node_type == NodeType::Operation {
             match &root.value {
                 Some(val) => match val.clone().as_str() {
@@ -44,7 +47,7 @@ impl Interpreter {
                             .as_ref()
                             .expect("expected an identifier");
                         let value = self.evaluate_helper(&root.children[1]);
-                        self.identifiers.insert(identifier.clone(), value);
+                        self.identifiers.insert(identifier.clone(), value.clone());
                         return value;
                     }
                     "declaration" => {
@@ -54,16 +57,16 @@ impl Interpreter {
                             .expect("expected an identifier");
                         self.functions
                             .insert(identifier.clone(), root.children[1].clone());
-                        return 1;
+                        return Value::Number(0);
                     }
                     "print" => {
                         let value = self.evaluate_helper(&root.children[0]);
-                        println!("{:?}", value);
+                        self.print_value(&value);
                         return value;
                     }
                     _ => {
                         if self.functions.contains_key(val) {
-                            let values: Vec<i32> = root.children[0]
+                            let values: Vec<Value> = root.children[0]
                                 .children
                                 .iter()
                                 .map(|child| self.evaluate_helper(child))
@@ -78,23 +81,7 @@ impl Interpreter {
         }
 
         if root.children.len() == 0 {
-            let result = root
-                .value
-                .as_ref()
-                .expect("expected a value")
-                .parse::<i32>();
-            if result.is_ok() {
-                return result.unwrap();
-            } else {
-                return *self
-                    .identifiers
-                    .get(
-                        root.value
-                            .as_ref()
-                            .expect("expected an identifier for value"),
-                    )
-                    .unwrap();
-            }
+            return self.parse_value(root);
         }
 
         if root.children.len() == 1 {
@@ -103,60 +90,181 @@ impl Interpreter {
 
         if root.node_type == NodeType::If {
             let condition = self.evaluate_helper(&root.children[0]);
-            if condition != 0 {
+            let condition = match condition {
+                Value::Boolean(val) => val,
+                _ => panic!("Expected a boolean"),
+            };
+
+            if condition {
                 return self.evaluate_helper(&root.children[1]);
             } else {
                 return self.evaluate_helper(&root.children[2]);
             }
         }
 
-        let values: Vec<i32> = root
+        let values: Vec<Value> = root
             .children
             .iter()
             .map(|child| self.evaluate_helper(child))
             .collect();
 
         match root.value.as_ref().unwrap().as_str() {
-            "+" => values.iter().copied().reduce(|acc, el| acc + el).unwrap(),
-            "-" => values.iter().copied().reduce(|acc, el| acc - el).unwrap(),
-            "*" => values.iter().copied().reduce(|acc, el| acc * el).unwrap(),
-            "/" => values.iter().copied().reduce(|acc, el| acc / el).unwrap(),
-            "%" => values.iter().copied().reduce(|acc, el| acc % el).unwrap(),
-            "==" => values
-                .iter()
-                .copied()
-                .reduce(|acc, el| (acc == el) as i32)
-                .unwrap(),
-            "!=" => values
-                .iter()
-                .copied()
-                .reduce(|acc, el| (acc != el) as i32)
-                .unwrap(),
-            ">" => values
-                .iter()
-                .copied()
-                .reduce(|acc, el| (acc > el) as i32)
-                .unwrap(),
-            ">=" => values
-                .iter()
-                .copied()
-                .reduce(|acc, el| (acc >= el) as i32)
-                .unwrap(),
-            "<" => values
-                .iter()
-                .copied()
-                .reduce(|acc, el| (acc < el) as i32)
-                .unwrap(),
-            "<=" => values
-                .iter()
-                .copied()
-                .reduce(|acc, el| (acc <= el) as i32)
-                .unwrap(),
+            "+" => {
+                if let Value::Number(first) = &values[0] {
+                    if let Value::Number(second) = &values[1] {
+                        return Value::Number(first + second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else if let Value::String(first) = &values[0] {
+                    if let Value::String(second) = &values[1] {
+                        return Value::String(format!("{}{}", first, second));
+                    } else {
+                        panic!("Expected a string");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
+            "-" => {
+                if let Value::Number(first) = values[0] {
+                    if let Value::Number(second) = values[1] {
+                        return Value::Number(first - second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
+            "*" => {
+                if let Value::Number(first) = values[0] {
+                    if let Value::Number(second) = values[1] {
+                        return Value::Number(first * second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
+            "/" => {
+                if let Value::Number(first) = values[0] {
+                    if let Value::Number(second) = values[1] {
+                        return Value::Number(first / second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
+            "%" => {
+                if let Value::Number(first) = values[0] {
+                    if let Value::Number(second) = values[1] {
+                        return Value::Number(first % second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
+            "==" => {
+                if let Value::Number(first) = &values[0] {
+                    if let Value::Number(second) = &values[1] {
+                        return Value::Boolean(first == second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else if let Value::String(first) = &values[0] {
+                    if let Value::String(second) = &values[1] {
+                        return Value::Boolean(first == second);
+                    } else {
+                        panic!("Expected a string");
+                    }
+                } else if let Value::Boolean(first) = &values[0] {
+                    if let Value::Boolean(second) = &values[1] {
+                        return Value::Boolean(first == second);
+                    } else {
+                        panic!("Expected a boolean");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
+            "!=" => {
+                if let Value::Number(first) = values[0] {
+                    if let Value::Number(second) = values[1] {
+                        return Value::Boolean(first != second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else if let Value::String(first) = &values[0] {
+                    if let Value::String(second) = &values[1] {
+                        return Value::Boolean(first != second);
+                    } else {
+                        panic!("Expected a string");
+                    }
+                } else if let Value::Boolean(first) = &values[0] {
+                    if let Value::Boolean(second) = &values[1] {
+                        return Value::Boolean(first != second);
+                    } else {
+                        panic!("Expected a boolean");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
+            ">" => {
+                if let Value::Number(first) = values[0] {
+                    if let Value::Number(second) = values[1] {
+                        return Value::Boolean(first > second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
+            ">=" => {
+                if let Value::Number(first) = values[0] {
+                    if let Value::Number(second) = values[1] {
+                        return Value::Boolean(first >= second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
+            "<" => {
+                if let Value::Number(first) = values[0] {
+                    if let Value::Number(second) = values[1] {
+                        return Value::Boolean(first < second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
+            "<=" => {
+                if let Value::Number(first) = values[0] {
+                    if let Value::Number(second) = values[1] {
+                        return Value::Boolean(first <= second);
+                    } else {
+                        panic!("Expected a number");
+                    }
+                } else {
+                    panic!("Expected a number");
+                }
+            }
             _ => panic!("Invalid operator"),
         }
     }
 
-    fn evaluate_function(&mut self, function_name: String, parameter_values: Vec<i32>) -> i32 {
+    fn evaluate_function(&mut self, function_name: String, parameter_values: Vec<Value>) -> Value {
         let function = self.functions.get(&function_name).unwrap();
 
         let arg_names: Vec<String> = function.children[0]
@@ -171,9 +279,9 @@ impl Interpreter {
             })
             .collect();
 
-        let mut arg_values: HashMap<String, i32> = HashMap::new();
+        let mut arg_values: HashMap<String, Value> = HashMap::new();
         for (i, arg_name) in arg_names.iter().enumerate() {
-            arg_values.insert(arg_name.clone(), parameter_values[i]);
+            arg_values.insert(arg_name.clone(), parameter_values[i].clone());
         }
 
         let mut interpreter =
@@ -182,5 +290,44 @@ impl Interpreter {
         let result = interpreter.evaluate(function.children[1].clone());
 
         result
+    }
+
+    fn parse_value(&self, node: &Node) -> Value {
+        if node.node_type == NodeType::Literal {
+            let value = node.value.as_ref().unwrap();
+            if value.contains("\"") {
+                return Value::String(value.clone().replace("\"", ""));
+            } else if value.contains(".") {
+                return Value::Float(value.parse().unwrap());
+            } else if value == "true" {
+                return Value::Boolean(true);
+            } else if value == "false" {
+                return Value::Boolean(false);
+            } else {
+                return Value::Number(value.parse().unwrap());
+            }
+        } else if node.node_type == NodeType::Identifier {
+            return self
+                .identifiers
+                .get(
+                    node.value
+                        .as_ref()
+                        .expect("expected an identifier for value"),
+                )
+                .unwrap()
+                .clone();
+        } else {
+            panic!("Invalid value");
+        }
+    }
+
+    fn print_value(&self, value: &Value) {
+        match value {
+            Value::Number(val) => println!("{}", val),
+            Value::Float(val) => println!("{}", val),
+            Value::String(val) => println!("\"{}\"", val),
+            Value::Boolean(val) => println!("{}", val),
+            _ => panic!("Invalid value"),
+        }
     }
 }
