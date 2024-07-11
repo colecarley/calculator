@@ -95,3 +95,7 @@ print("foo" == "foo")
 
 
 print(true != true)
+
+let foo = "foobar"
+print(foo[0])
+

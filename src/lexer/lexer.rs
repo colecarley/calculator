@@ -11,6 +11,8 @@ enum State {
     RightParen,
     LeftBrace,
     RightBrace,
+    LeftBracket,
+    RightBracket,
     Alpha,
     Comma,
     String,
@@ -68,6 +70,8 @@ impl Lexer {
         let alpha = Regex::new(r"[a-zA-Z_]").unwrap();
         let left_brace = Regex::new(r"\{").unwrap();
         let right_brace = Regex::new(r"\}").unwrap();
+        let left_bracket = Regex::new(r"\[").unwrap();
+        let right_bracket = Regex::new(r"\]").unwrap();
         let comma: Regex = Regex::new(r",").unwrap();
         let string: Regex = Regex::new(r#"""#).unwrap();
 
@@ -89,6 +93,10 @@ impl Lexer {
                 self.left_brace(c);
             } else if right_brace.is_match(&c.to_string()) {
                 self.right_brace(c);
+            } else if left_bracket.is_match(&c.to_string()) {
+                self.left_bracket(c);
+            } else if right_bracket.is_match(&c.to_string()) {
+                self.right_bracket(c);
             } else if comma.is_match(&c.to_string()) {
                 self.comma(c);
             } else if string.is_match(&c.to_string()) {
@@ -193,6 +201,30 @@ impl Lexer {
         self.push_right_brace();
     }
 
+    fn left_bracket(&mut self, c: char) {
+        if self.state == State::Alpha {
+            self.push_alpha();
+        }
+        if self.state == State::Number {
+            self.push_number();
+        }
+        self.state = State::LeftBracket;
+        self.buffer += &c.to_string();
+        self.push_left_bracket();
+    }
+
+    fn right_bracket(&mut self, c: char) {
+        if self.state == State::Alpha {
+            self.push_alpha();
+        }
+        if self.state == State::Number {
+            self.push_number();
+        }
+        self.state = State::RightBracket;
+        self.buffer += &c.to_string();
+        self.push_right_bracket();
+    }
+
     fn comma(&mut self, c: char) {
         if self.state == State::Alpha {
             self.push_alpha();
@@ -286,6 +318,18 @@ impl Lexer {
     fn push_right_brace(&mut self) {
         self.tokens
             .push(Token::new(TokenType::RightBrace, self.buffer.clone()));
+        self.buffer = String::new();
+    }
+
+    fn push_left_bracket(&mut self) {
+        self.tokens
+            .push(Token::new(TokenType::LeftBracket, self.buffer.clone()));
+        self.buffer = String::new();
+    }
+
+    fn push_right_bracket(&mut self) {
+        self.tokens
+            .push(Token::new(TokenType::RightBracket, self.buffer.clone()));
         self.buffer = String::new();
     }
 

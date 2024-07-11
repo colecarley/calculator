@@ -102,6 +102,29 @@ impl Interpreter {
             }
         }
 
+        if root.node_type == NodeType::Index {
+            let list_name = root.children[0]
+                .value
+                .as_ref()
+                .expect("expected an identifier for value");
+            let index = self.evaluate_helper(&root.children[1]);
+            let index = if let Value::Number(index) = index {
+                index
+            } else {
+                panic!("Expected a number");
+            };
+
+            let string = self.identifiers.get(list_name).unwrap();
+            if let Value::String(string) = string {
+                return Value::String(
+                    (string.as_bytes()[index as usize].clone() as char).to_string(),
+                );
+            } else {
+                panic!("Expected a list");
+            }
+        }
+
+
         let values: Vec<Value> = root
             .children
             .iter()
