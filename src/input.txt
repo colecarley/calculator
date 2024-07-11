@@ -19,3 +19,21 @@ println(get())
 
 
 let foo = []
+
+funk print_elements(list) {
+    if len(list) == 0 {
+        println("done")
+    } else {
+        println(head(list))
+        print_elements(tail(list))
+    }
+}
+
+print_elements([1,2,3])
+
+
+if true {
+    println("it is true")
+} else {
+    println("it is false")
+}

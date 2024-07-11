@@ -386,6 +386,10 @@ impl Parser {
     }
 
     fn list(&mut self, root: &mut Node) {
+        if self.peek().token_type == TokenType::RightBracket {
+            self.next();
+            return;
+        }
         let mut expression = Node {
             value: None,
             node_type: NodeType::Expression,
@@ -456,13 +460,15 @@ impl Parser {
         if_statement.children.push(expression);
         if_statement.children.push(block);
 
-        if self.peek().token_type == TokenType::Keyword {
-            match self.peek().value.as_str() {
-                "else" => {
-                    self.next();
-                    self.else_statement(&mut if_statement);
+        if self.position < self.tokens.len() {
+            if self.peek().token_type == TokenType::Keyword {
+                match self.peek().value.as_str() {
+                    "else" => {
+                        self.next();
+                        self.else_statement(&mut if_statement);
+                    }
+                    _ => self.error(self.peek().clone(), "Invalid keyword"),
                 }
-                _ => self.error(self.peek().clone(), "Invalid keyword"),
             }
         }
 
@@ -476,12 +482,12 @@ impl Parser {
 
         let mut else_block = Node {
             value: None,
-            node_type: NodeType::Expression,
+            node_type: NodeType::Block,
             children: Vec::new(),
         };
 
         self.next();
-        self.expression(&mut else_block);
+        self.block(&mut else_block);
 
         if self.peek().token_type != TokenType::RightBrace {
             self.error(self.peek().clone(), "Expected right brace");
@@ -686,6 +692,8 @@ impl Parser {
     }
 
     fn peek(&self) -> &Token {
+        // TODO: this should return a result
+        // if none, then call self.error
         &self.tokens[self.position]
     }
 

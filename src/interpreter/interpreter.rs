@@ -165,11 +165,10 @@ impl Interpreter {
             }
         }
         if root.node_type == NodeType::Block {
-            let mut result = self.evaluate_helper(root.children.last().expect("expected a child"));
             for child in root.children.iter().take(root.children.len() - 1) {
-                result = self.evaluate_helper(child);
+                self.evaluate_helper(child);
             }
-            return result;
+            return self.evaluate_helper(root.children.last().expect("expected a child"));
         }
 
         if root.node_type == NodeType::List {
