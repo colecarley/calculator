@@ -271,6 +271,15 @@ impl Parser {
                 if self.peek().token_type == TokenType::LeftParen {
                     self.prev();
                     self.function_call(root);
+                } else if self.peek().token_type == TokenType::LeftBracket {
+                    let mut node = Node {
+                        value: None,
+                        node_type: NodeType::Index,
+                        children: Vec::new(),
+                    };
+                    self.prev();
+                    self.array_index(&mut node);
+                    root.children.push(node);
                 } else {
                     self.prev();
                     let node = Node {
@@ -579,6 +588,43 @@ impl Parser {
 
         self.next();
         self.parameters(root);
+    }
+
+    fn array_index(&mut self, root: &mut Node) {
+        if self.peek().token_type != TokenType::Identifier {
+            panic!("Expected identifier, found {:?}", self.peek().token_type);
+        }
+
+        let identifier = Node {
+            value: Some(self.peek().value.clone()),
+            node_type: NodeType::Identifier,
+            children: Vec::new(),
+        };
+
+        root.children.push(identifier);
+
+        self.next();
+
+        if self.peek().token_type != TokenType::LeftBracket {
+            panic!("Expected left bracket");
+        }
+
+        self.next();
+
+        let mut expression = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut expression);
+        root.children.push(expression);
+
+        if self.peek().token_type != TokenType::RightBracket {
+            panic!("Expected right bracket");
+        }
+
+        self.next();
     }
 
     fn peek(&self) -> &Token {
