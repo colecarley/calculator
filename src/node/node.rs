@@ -13,6 +13,7 @@ pub enum NodeType {
     Program,
     Index,
     List,
+    Block,
 }
 
 #[derive(Debug, Clone)]

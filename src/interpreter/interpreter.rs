@@ -164,6 +164,14 @@ impl Interpreter {
                 None => {}
             }
         }
+        if root.node_type == NodeType::Block {
+            let mut result = self.evaluate_helper(root.children.last().expect("expected a child"));
+            for child in root.children.iter().take(root.children.len() - 1) {
+                result = self.evaluate_helper(child);
+            }
+            return result;
+        }
+
         if root.node_type == NodeType::List {
             let values: Vec<Value> = root
                 .children

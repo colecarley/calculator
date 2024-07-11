@@ -115,6 +115,18 @@ impl Parser {
         return root;
     }
 
+    fn block(&mut self, root: &mut Node) {
+        while self.peek().token_type != TokenType::RightBrace {
+            let mut expression = Node {
+                value: None,
+                node_type: NodeType::Expression,
+                children: Vec::new(),
+            };
+            self.expression(&mut expression);
+            root.children.push(expression);
+        }
+    }
+
     fn expression(&mut self, root: &mut Node) {
         if self.peek().token_type == TokenType::Keyword {
             match self.peek().value.as_str() {
@@ -430,11 +442,11 @@ impl Parser {
 
         let mut block = Node {
             value: None,
-            node_type: NodeType::Expression,
+            node_type: NodeType::Block,
             children: Vec::new(),
         };
 
-        self.expression(&mut block);
+        self.block(&mut block);
 
         if self.peek().token_type != TokenType::RightBrace {
             self.error(self.peek().clone(), "Expected right brace");
@@ -537,11 +549,11 @@ impl Parser {
 
         let mut block = Node {
             value: None,
-            node_type: NodeType::Expression,
+            node_type: NodeType::Block,
             children: Vec::new(),
         };
 
-        self.expression(&mut block);
+        self.block(&mut block);
 
         if self.peek().token_type != TokenType::RightBrace {
             self.error(self.peek().clone(), "Expected right brace");

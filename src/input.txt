@@ -1,6 +1,21 @@
 let singleton = [1]
 let doubleton = [1,2]
 
-print(singleton[0])
+println(singleton[0])
 
-print()
+println(3)
+
+funk get() {
+    funk outer() {
+        funk inner() {
+            "hello"
+        }
+        inner()
+    }
+    outer()
+}
+
+println(get())
+
+
+let foo = []
