@@ -2,3 +2,5 @@ let singleton = [1]
 let doubleton = [1,2]
 
 print(singleton[0])
+
+print()

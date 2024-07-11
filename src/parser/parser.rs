@@ -57,6 +57,8 @@ ListTailTail -> ',' Expr ListTailTail
 
 */
 
+use std::process::exit;
+
 use crate::node::node::{Node, NodeType};
 use crate::token::token::{Token, TokenType};
 
@@ -138,7 +140,8 @@ impl Parser {
                 "true" | "false" | "is_bool" | "is_number" | "is_string" | "is_list" | "type"
                 | "head" | "tail" | "len" | "input" | "is_function" => {}
                 _ => {
-                    panic!("Invalid keyword");
+                    // panic!("Invalid keyword");
+                    self.error(self.peek().clone(), "Invalid keyword");
                 }
             }
         }
@@ -196,7 +199,6 @@ impl Parser {
                     self.term(&mut term);
                     operator.children.push(term);
                     self.expression_tail(root, &mut operator);
-                    // root.children.push(operator);
                 }
                 _ => return,
             }
@@ -260,7 +262,7 @@ impl Parser {
                 self.next();
                 root.children.push(expression);
             } else {
-                panic!("Expected right parenthesis");
+                self.error(self.peek().clone(), "Expected right parenthesis");
             }
         } else if self.peek().token_type == TokenType::Number {
             let node = Node {
@@ -309,7 +311,7 @@ impl Parser {
                 }
                 "is_bool" | "is_number" | "is_string" | "is_list" | "type" | "head" | "tail"
                 | "len" | "input" | "is_function" => self.function_call(root),
-                _ => panic!("Invalid keyword"),
+                _ => self.error(self.peek().clone(), "Invalid keyword"),
             }
         } else if self.peek().token_type == TokenType::String {
             let node = Node {
@@ -329,7 +331,7 @@ impl Parser {
             self.list(&mut list);
             root.children.push(list);
         } else {
-            panic!("Invalid factor, found {:?}", self.peek().token_type);
+            self.error(self.peek().clone(), "Invalid factor");
         }
     }
 
@@ -341,7 +343,7 @@ impl Parser {
         };
 
         if self.peek().token_type != TokenType::Identifier {
-            panic!("Expected identifier, found {:?}", self.peek().token_type);
+            self.error(self.peek().clone(), "Expected identifier");
         };
 
         let node = Node {
@@ -353,7 +355,7 @@ impl Parser {
         self.next();
 
         if self.peek().token_type != TokenType::Operator {
-            panic!("Expected assignment operator");
+            self.error(self.peek().clone(), "Expected assignment operator");
         }
 
         if self.peek().value == "=".to_string() {
@@ -367,7 +369,7 @@ impl Parser {
             operation.children.push(expression);
             root.children.push(operation);
         } else {
-            panic!("Expected assignment operator");
+            self.error(self.peek().clone(), "Expected assignment operator");
         }
     }
 
@@ -390,7 +392,7 @@ impl Parser {
         }
 
         if self.peek().token_type != TokenType::Comma {
-            panic!("Expected comma");
+            self.error(self.peek().clone(), "Expected comma");
         }
 
         self.next();
@@ -421,7 +423,7 @@ impl Parser {
         self.expression(&mut expression);
 
         if self.peek().token_type != TokenType::LeftBrace {
-            panic!("Expected left brace");
+            self.error(self.peek().clone(), "Expected left brace");
         }
 
         self.next();
@@ -435,7 +437,7 @@ impl Parser {
         self.expression(&mut block);
 
         if self.peek().token_type != TokenType::RightBrace {
-            panic!("Expected right brace");
+            self.error(self.peek().clone(), "Expected right brace");
         }
 
         self.next();
@@ -448,7 +450,7 @@ impl Parser {
                     self.next();
                     self.else_statement(&mut if_statement);
                 }
-                _ => panic!("Invalid keyword"),
+                _ => self.error(self.peek().clone(), "Invalid keyword"),
             }
         }
 
@@ -457,7 +459,7 @@ impl Parser {
 
     fn else_statement(&mut self, if_statement: &mut Node) {
         if self.peek().token_type != TokenType::LeftBrace {
-            panic!("Expected left brace");
+            self.error(self.peek().clone(), "Expected left brace");
         }
 
         let mut else_block = Node {
@@ -470,7 +472,7 @@ impl Parser {
         self.expression(&mut else_block);
 
         if self.peek().token_type != TokenType::RightBrace {
-            panic!("Expected right brace, found {:?}", self.peek().token_type);
+            self.error(self.peek().clone(), "Expected right brace");
         }
 
         self.next();
@@ -486,7 +488,7 @@ impl Parser {
         };
 
         if self.peek().token_type != TokenType::Identifier {
-            panic!("Expected identifier, found {:?}", self.peek().token_type);
+            self.error(self.peek().clone(), "Expected identifier");
         }
 
         let identifier = Node {
@@ -511,7 +513,7 @@ impl Parser {
         };
 
         if self.peek().token_type != TokenType::LeftParen {
-            panic!("Expected left parenthesis");
+            self.error(self.peek().clone(), "Expected left parenthesis");
         }
 
         self.next();
@@ -520,7 +522,7 @@ impl Parser {
         }
 
         if self.peek().token_type != TokenType::RightParen {
-            panic!("Expected right parenthesis");
+            self.error(self.peek().clone(), "Expected right parenthesis");
         }
 
         function.children.push(args);
@@ -528,7 +530,7 @@ impl Parser {
         self.next();
 
         if self.peek().token_type != TokenType::LeftBrace {
-            panic!("Expected left brace, found {:?}", self.peek().token_type);
+            self.error(self.peek().clone(), "Expected left brace");
         }
 
         self.next();
@@ -542,11 +544,7 @@ impl Parser {
         self.expression(&mut block);
 
         if self.peek().token_type != TokenType::RightBrace {
-            panic!(
-                "Expected right brace, found {:?} with value {}",
-                self.peek().token_type,
-                self.peek().value
-            );
+            self.error(self.peek().clone(), "Expected right brace");
         }
         self.next();
 
@@ -557,7 +555,7 @@ impl Parser {
 
     fn args(&mut self, root: &mut Node) {
         if self.peek().token_type != TokenType::Identifier {
-            panic!("Expected identifier, found {:?}", self.peek().token_type);
+            self.error(self.peek().clone(), "Expected identifier");
         }
 
         let identifier = Node {
@@ -591,7 +589,7 @@ impl Parser {
         self.next();
 
         if self.peek().token_type != TokenType::LeftParen {
-            panic!("Expected left parenthesis");
+            self.error(self.peek().clone(), "Expected left parenthesis");
         }
 
         let mut parameters = Node {
@@ -604,7 +602,7 @@ impl Parser {
         self.parameters(&mut parameters);
 
         if self.peek().token_type != TokenType::RightParen {
-            panic!("Expected right parenthesis");
+            self.error(self.peek().clone(), "Expected right parenthesis");
         }
 
         self.next();
@@ -640,7 +638,7 @@ impl Parser {
 
     fn index(&mut self, root: &mut Node) {
         if self.peek().token_type != TokenType::Identifier {
-            panic!("Expected identifier, found {:?}", self.peek().token_type);
+            self.error(self.peek().clone(), "Expected identifier");
         }
 
         let identifier = Node {
@@ -654,7 +652,7 @@ impl Parser {
         self.next();
 
         if self.peek().token_type != TokenType::LeftBracket {
-            panic!("Expected left bracket");
+            self.error(self.peek().clone(), "Expected left bracket");
         }
 
         self.next();
@@ -669,7 +667,7 @@ impl Parser {
         root.children.push(expression);
 
         if self.peek().token_type != TokenType::RightBracket {
-            panic!("Expected right bracket");
+            self.error(self.peek().clone(), "Expected right bracket");
         }
 
         self.next();
@@ -677,6 +675,14 @@ impl Parser {
 
     fn peek(&self) -> &Token {
         &self.tokens[self.position]
+    }
+
+    fn error(&self, token: Token, message: &str) {
+        eprintln!(
+            "Error found near line {} with value '{}': {}",
+            token.line, token.value, message
+        );
+        exit(1);
     }
 
     pub fn new(tokens: Vec<Token>) -> Parser {

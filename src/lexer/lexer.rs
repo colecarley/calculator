@@ -25,6 +25,7 @@ pub struct Lexer {
     buffer: String,
     keywords: Vec<String>,
     operators: Vec<String>,
+    current_line: i32,
 }
 
 impl Lexer {
@@ -68,6 +69,7 @@ impl Lexer {
                 "<".to_string(),
                 "!=".to_string(),
             ],
+            current_line: 0,
         }
     }
 
@@ -87,33 +89,36 @@ impl Lexer {
         let string: Regex = Regex::new(r#"""#).unwrap();
 
         let input = self.input.clone();
-        for c in input.chars() {
-            if number.is_match(&c.to_string()) {
-                self.number(c);
-            } else if alpha.is_match(&c.to_string()) {
-                self.alpha(c);
-            } else if operator.is_match(&c.to_string()) {
-                self.operator(c);
-            } else if right_paren.is_match(&c.to_string()) {
-                self.right_paren(c);
-            } else if left_paren.is_match(&c.to_string()) {
-                self.left_paren(c);
-            } else if whitespace.is_match(&c.to_string()) {
-                self.whitespace();
-            } else if left_brace.is_match(&c.to_string()) {
-                self.left_brace(c);
-            } else if right_brace.is_match(&c.to_string()) {
-                self.right_brace(c);
-            } else if left_bracket.is_match(&c.to_string()) {
-                self.left_bracket(c);
-            } else if right_bracket.is_match(&c.to_string()) {
-                self.right_bracket(c);
-            } else if comma.is_match(&c.to_string()) {
-                self.comma(c);
-            } else if string.is_match(&c.to_string()) {
-                self.string(c);
-            } else {
-                println!("Invalid character: {}", c);
+        for (i, line) in input.lines().enumerate() {
+            self.current_line = i as i32 + 1;
+            for c in line.chars() {
+                if number.is_match(&c.to_string()) {
+                    self.number(c);
+                } else if alpha.is_match(&c.to_string()) {
+                    self.alpha(c);
+                } else if operator.is_match(&c.to_string()) {
+                    self.operator(c);
+                } else if right_paren.is_match(&c.to_string()) {
+                    self.right_paren(c);
+                } else if left_paren.is_match(&c.to_string()) {
+                    self.left_paren(c);
+                } else if whitespace.is_match(&c.to_string()) {
+                    self.whitespace();
+                } else if left_brace.is_match(&c.to_string()) {
+                    self.left_brace(c);
+                } else if right_brace.is_match(&c.to_string()) {
+                    self.right_brace(c);
+                } else if left_bracket.is_match(&c.to_string()) {
+                    self.left_bracket(c);
+                } else if right_bracket.is_match(&c.to_string()) {
+                    self.right_bracket(c);
+                } else if comma.is_match(&c.to_string()) {
+                    self.comma(c);
+                } else if string.is_match(&c.to_string()) {
+                    self.string(c);
+                } else {
+                    panic!("Invalid character: {}", c);
+                }
             }
         }
 
@@ -284,18 +289,27 @@ impl Lexer {
 
     fn push_alpha(&mut self) {
         if self.keywords.contains(&self.buffer) {
-            self.tokens
-                .push(Token::new(TokenType::Keyword, self.buffer.clone()));
+            self.tokens.push(Token::new(
+                TokenType::Keyword,
+                self.buffer.clone(),
+                self.current_line,
+            ));
         } else {
-            self.tokens
-                .push(Token::new(TokenType::Identifier, self.buffer.clone()));
+            self.tokens.push(Token::new(
+                TokenType::Identifier,
+                self.buffer.clone(),
+                self.current_line,
+            ));
         }
         self.buffer = String::new();
     }
 
     fn push_number(&mut self) {
-        self.tokens
-            .push(Token::new(TokenType::Number, self.buffer.clone()));
+        self.tokens.push(Token::new(
+            TokenType::Number,
+            self.buffer.clone(),
+            self.current_line,
+        ));
         self.buffer = String::new();
     }
 
@@ -303,56 +317,83 @@ impl Lexer {
         if !self.operators.contains(&self.buffer) {
             panic!("Invalid operator: {}", self.buffer,);
         }
-        self.tokens
-            .push(Token::new(TokenType::Operator, self.buffer.clone()));
+        self.tokens.push(Token::new(
+            TokenType::Operator,
+            self.buffer.clone(),
+            self.current_line,
+        ));
         self.buffer = String::new();
     }
 
     fn push_left_paren(&mut self) {
-        self.tokens
-            .push(Token::new(TokenType::LeftParen, self.buffer.clone()));
+        self.tokens.push(Token::new(
+            TokenType::LeftParen,
+            self.buffer.clone(),
+            self.current_line,
+        ));
         self.buffer = String::new();
     }
 
     fn push_right_paren(&mut self) {
-        self.tokens
-            .push(Token::new(TokenType::RightParen, self.buffer.clone()));
+        self.tokens.push(Token::new(
+            TokenType::RightParen,
+            self.buffer.clone(),
+            self.current_line,
+        ));
         self.buffer = String::new();
     }
 
     fn push_left_brace(&mut self) {
-        self.tokens
-            .push(Token::new(TokenType::LeftBrace, self.buffer.clone()));
+        self.tokens.push(Token::new(
+            TokenType::LeftBrace,
+            self.buffer.clone(),
+            self.current_line,
+        ));
         self.buffer = String::new();
     }
 
     fn push_right_brace(&mut self) {
-        self.tokens
-            .push(Token::new(TokenType::RightBrace, self.buffer.clone()));
+        self.tokens.push(Token::new(
+            TokenType::RightBrace,
+            self.buffer.clone(),
+            self.current_line,
+        ));
         self.buffer = String::new();
     }
 
     fn push_left_bracket(&mut self) {
-        self.tokens
-            .push(Token::new(TokenType::LeftBracket, self.buffer.clone()));
+        self.tokens.push(Token::new(
+            TokenType::LeftBracket,
+            self.buffer.clone(),
+            self.current_line,
+        ));
         self.buffer = String::new();
     }
 
     fn push_right_bracket(&mut self) {
-        self.tokens
-            .push(Token::new(TokenType::RightBracket, self.buffer.clone()));
+        self.tokens.push(Token::new(
+            TokenType::RightBracket,
+            self.buffer.clone(),
+            self.current_line,
+        ));
         self.buffer = String::new();
     }
 
     fn push_comma(&mut self) {
-        self.tokens
-            .push(Token::new(TokenType::Comma, self.buffer.clone()));
+        self.tokens.push(Token::new(
+            TokenType::Comma,
+            self.buffer.clone(),
+            self.current_line,
+        ));
         self.buffer = String::new();
     }
 
     fn push_string(&mut self) {
-        self.tokens
-            .push(Token::new(TokenType::String, self.buffer.clone()));
+        self.tokens.push(Token::new(
+            TokenType::String,
+            self.buffer.clone(),
+            self.current_line,
+        ));
         self.buffer = String::new();
         self.state = State::Start;
     }
