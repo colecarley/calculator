@@ -69,3 +69,29 @@ funk is_even(x) {
 
 print(is_even(2))
 print(is_even(1))
+
+print(true)
+print(false)
+
+print("hello")
+
+let foo = 1
+print(foo)
+
+funk return_true() {
+    true
+}
+
+print(return_true())
+
+funk return_string() {
+    "this is a string"
+}
+
+print(return_string())
+print("foo" + "shoe")
+
+print("foo" == "foo")
+
+
+print(true != true)

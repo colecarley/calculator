@@ -131,6 +131,7 @@ impl Parser {
                     self.function_call(root);
                     return;
                 }
+                "true" | "false" => {}
                 _ => {
                     panic!("Invalid keyword");
                 }
@@ -281,8 +282,29 @@ impl Parser {
                     self.next();
                 }
             }
+        } else if self.peek().token_type == TokenType::Keyword {
+            match self.peek().value.as_str() {
+                "true" | "false" => {
+                    let node = Node {
+                        value: Some(self.peek().value.clone()),
+                        node_type: NodeType::Literal,
+                        children: Vec::new(),
+                    };
+                    root.children.push(node);
+                    self.next();
+                }
+                _ => panic!("Invalid keyword"),
+            }
+        } else if self.peek().token_type == TokenType::String {
+            let node = Node {
+                value: Some(self.peek().value.clone()),
+                node_type: NodeType::Literal,
+                children: Vec::new(),
+            };
+            root.children.push(node);
+            self.next();
         } else {
-            panic!("Invalid factor");
+            panic!("Invalid factor, found {:?}", self.peek().token_type);
         }
     }
 
@@ -535,6 +557,10 @@ impl Parser {
     }
 
     fn parameters(&mut self, root: &mut Node) {
+        if self.peek().token_type == TokenType::RightParen {
+            return;
+        }
+
         let mut expression = Node {
             value: None,
             node_type: NodeType::Expression,
