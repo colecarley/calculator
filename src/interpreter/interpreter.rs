@@ -70,6 +70,85 @@ impl Interpreter {
                         println!();
                         return value;
                     }
+                    "head" => {
+                        let list = self.evaluate_helper(&root.children[0]);
+                        if let Value::List(list) = list {
+                            return list[0].clone();
+                        } else {
+                            panic!("Expected a list");
+                        }
+                    }
+                    "tail" => {
+                        let list = self.evaluate_helper(&root.children[0]);
+                        if let Value::List(list) = list {
+                            return Value::List(list[1..].to_vec().clone());
+                        } else if let Value::String(string) = list {
+                            return Value::String(string[1..].to_string());
+                        } else {
+                            panic!("Expected a list or a string");
+                        }
+                    }
+                    "len" => {
+                        let list = self.evaluate_helper(&root.children[0]);
+                        if let Value::List(list) = list {
+                            return Value::Number(list.len() as i32);
+                        } else if let Value::String(string) = list {
+                            return Value::Number(string.len() as i32);
+                        } else {
+                            panic!("Expected a list or a string");
+                        }
+                    }
+                    "type" => {
+                        let value = self.evaluate_helper(&root.children[0]);
+                        return match value {
+                            Value::Number(_) => Value::String("number".to_string()),
+                            Value::Float(_) => Value::String("float".to_string()),
+                            Value::String(_) => Value::String("string".to_string()),
+                            Value::Boolean(_) => Value::String("bool".to_string()),
+                            Value::List(_) => Value::String("list".to_string()),
+                        };
+                    }
+                    "is_bool" => {
+                        let value = self.evaluate_helper(&root.children[0]);
+                        return match value {
+                            Value::Boolean(_) => Value::Boolean(true),
+                            _ => Value::Boolean(false),
+                        };
+                    }
+                    "is_number" => {
+                        let value = self.evaluate_helper(&root.children[0]);
+                        return match value {
+                            Value::Number(_) => Value::Boolean(true),
+                            _ => Value::Boolean(false),
+                        };
+                    }
+                    "is_string" => {
+                        let value = self.evaluate_helper(&root.children[0]);
+                        return match value {
+                            Value::String(_) => Value::Boolean(true),
+                            _ => Value::Boolean(false),
+                        };
+                    }
+                    "is_list" => {
+                        let value = self.evaluate_helper(&root.children[0]);
+                        return match value {
+                            Value::List(_) => Value::Boolean(true),
+                            _ => Value::Boolean(false),
+                        };
+                    }
+                    "is_function" => {
+                        return match self.functions.contains_key(val) {
+                            true => Value::Boolean(true),
+                            false => Value::Boolean(false),
+                        };
+                    }
+                    "input" => {
+                        let mut input = String::new();
+                        std::io::stdin()
+                            .read_line(&mut input)
+                            .expect("Failed to read line");
+                        return Value::String(input.trim().to_string());
+                    }
                     _ => {
                         if self.functions.contains_key(val) {
                             let values: Vec<Value> = root.children[0]
@@ -84,6 +163,15 @@ impl Interpreter {
                 },
                 None => {}
             }
+        }
+        if root.node_type == NodeType::List {
+            let values: Vec<Value> = root
+                .children
+                .iter()
+                .map(|child| self.evaluate_helper(child))
+                .collect();
+
+            return Value::List(values);
         }
 
         if root.children.len() == 0 {
@@ -141,10 +229,6 @@ impl Interpreter {
             .iter()
             .map(|child| self.evaluate_helper(child))
             .collect();
-
-        if root.node_type == NodeType::List {
-            return Value::List(values);
-        }
 
         match root.value.as_ref().unwrap().as_str() {
             "+" => {
@@ -371,7 +455,7 @@ impl Interpreter {
         match value {
             Value::Number(val) => print!("{}", val),
             Value::Float(val) => print!("{}", val),
-            Value::String(val) => print!("\"{}\"", val),
+            Value::String(val) => print!("{}", val),
             Value::Boolean(val) => print!("{}", val),
             Value::List(val) => {
                 print!("[");
@@ -383,7 +467,6 @@ impl Interpreter {
                 }
                 print!("]");
             }
-            _ => panic!("Invalid value"),
         }
     }
 }

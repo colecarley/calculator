@@ -17,7 +17,6 @@ pub enum TokenType {
 #[derive(Clone, Debug)]
 pub enum Value {
     Number(i32),
-    Identifier(String),
     String(String),
     Boolean(bool),
     Float(f32),

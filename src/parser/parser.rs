@@ -114,7 +114,6 @@ impl Parser {
     }
 
     fn expression(&mut self, root: &mut Node) {
-        println!("expression");
         if self.peek().token_type == TokenType::Keyword {
             match self.peek().value.as_str() {
                 "let" => {
@@ -132,15 +131,12 @@ impl Parser {
                     self.function_declaration(root);
                     return;
                 }
-                "print" => {
+                "print" | "println" => {
                     self.function_call(root);
                     return;
                 }
-                "println" => {
-                    self.function_call(root);
-                    return;
-                }
-                "true" | "false" => {}
+                "true" | "false" | "is_bool" | "is_number" | "is_string" | "is_list" | "type"
+                | "head" | "tail" | "len" | "input" | "is_function" => {}
                 _ => {
                     panic!("Invalid keyword");
                 }
@@ -161,7 +157,7 @@ impl Parser {
             root.children.push(first_term.clone());
             return;
         }
-        if self.tokens[self.position].token_type == TokenType::Operator {
+        if self.peek().token_type == TokenType::Operator {
             match self.peek().value.as_str() {
                 "+" | "-" => {
                     let mut operator = Node {
@@ -311,6 +307,8 @@ impl Parser {
                     root.children.push(node);
                     self.next();
                 }
+                "is_bool" | "is_number" | "is_string" | "is_list" | "type" | "head" | "tail"
+                | "len" | "input" | "is_function" => self.function_call(root),
                 _ => panic!("Invalid keyword"),
             }
         } else if self.peek().token_type == TokenType::String {
@@ -336,8 +334,6 @@ impl Parser {
     }
 
     fn assignment(&mut self, root: &mut Node) {
-        // root.value = Some("=".to_string());
-
         let mut operation = Node {
             value: Some("=".to_string()),
             node_type: NodeType::Operation,
