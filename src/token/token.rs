@@ -1,3 +1,5 @@
+use crate::node::node::Node;
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum TokenType {
     Number,
@@ -21,6 +23,7 @@ pub enum Value {
     Boolean(bool),
     Float(f32),
     List(Vec<Value>),
+    Function(Node),
     Null,
 }
 

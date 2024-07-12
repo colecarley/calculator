@@ -8,25 +8,17 @@ use crate::{
 
 pub struct Interpreter {
     identifiers: HashMap<String, Value>,
-    functions: HashMap<String, Node>,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
             identifiers: HashMap::new(),
-            functions: HashMap::new(),
         }
     }
 
-    fn new_with_identifiers_and_functions(
-        identifiers: HashMap<String, Value>,
-        functions: HashMap<String, Node>,
-    ) -> Interpreter {
-        Interpreter {
-            identifiers,
-            functions,
-        }
+    fn new_with_identifiers(identifiers: HashMap<String, Value>) -> Interpreter {
+        Interpreter { identifiers }
     }
 
     pub fn evaluate(&mut self, root: Node) -> Value {
@@ -55,9 +47,12 @@ impl Interpreter {
                             .value
                             .as_ref()
                             .expect("expected an identifier");
-                        self.functions
-                            .insert(identifier.clone(), root.children[1].clone());
-                        return Value::Number(0);
+                        self.identifiers.insert(
+                            identifier.clone(),
+                            Value::Function(root.children[1].clone()),
+                        );
+
+                        return Value::Function(root.children[1].clone());
                     }
                     "print" => {
                         let value = self.evaluate_helper(&root.children[0]);
@@ -106,6 +101,7 @@ impl Interpreter {
                             Value::String(_) => Value::String("string".to_string()),
                             Value::Boolean(_) => Value::String("bool".to_string()),
                             Value::List(_) => Value::String("list".to_string()),
+                            Value::Function(_) => Value::String("function".to_string()),
                             Value::Null => Value::String("null".to_string()),
                         };
                     }
@@ -138,8 +134,17 @@ impl Interpreter {
                         };
                     }
                     "is_function" => {
-                        return match self.functions.contains_key(val) {
-                            true => Value::Boolean(true),
+                        return match self.identifiers.contains_key(val) {
+                            true => match self.identifiers.get(val) {
+                                Some(val) => {
+                                    if let Value::Function(_) = val {
+                                        Value::Boolean(true)
+                                    } else {
+                                        Value::Boolean(false)
+                                    }
+                                }
+                                None => Value::Boolean(false),
+                            },
                             false => Value::Boolean(false),
                         };
                     }
@@ -151,13 +156,12 @@ impl Interpreter {
                         return Value::String(input.trim().to_string());
                     }
                     _ => {
-                        if self.functions.contains_key(val) {
+                        if self.identifiers.contains_key(val) {
                             let values: Vec<Value> = root.children[0]
                                 .children
                                 .iter()
                                 .map(|child| self.evaluate_helper(child))
                                 .collect();
-
                             return self.evaluate_function(val.clone(), values);
                         }
                     }
@@ -411,31 +415,37 @@ impl Interpreter {
     }
 
     fn evaluate_function(&mut self, function_name: String, parameter_values: Vec<Value>) -> Value {
-        let function = self.functions.get(&function_name).unwrap();
-
-        let arg_names: Vec<String> = function.children[0]
-            .children
-            .iter()
-            .map(|child| {
-                child
-                    .value
-                    .as_ref()
-                    .expect("expected an identifier for value")
-                    .clone()
-            })
-            .collect();
-
-        let mut arg_values: HashMap<String, Value> = HashMap::new();
-        for (i, arg_name) in arg_names.iter().enumerate() {
-            arg_values.insert(arg_name.clone(), parameter_values[i].clone());
+        if !self.identifiers.contains_key(&function_name) {
+            panic!("Function not found");
         }
 
-        let mut interpreter =
-            Interpreter::new_with_identifiers_and_functions(arg_values, self.functions.clone());
+        let function = self.identifiers.get(&function_name).unwrap();
+        if let Value::Function(function) = function {
+            let arg_names: Vec<String> = function.children[0]
+                .children
+                .iter()
+                .map(|child| {
+                    child
+                        .value
+                        .as_ref()
+                        .expect("expected an identifier for value")
+                        .clone()
+                })
+                .collect();
 
-        let result = interpreter.evaluate(function.children[1].clone());
+            let mut arg_values: HashMap<String, Value> = self.identifiers.clone();
+            for (i, arg_name) in arg_names.iter().enumerate() {
+                arg_values.insert(arg_name.clone(), parameter_values[i].clone());
+            }
 
-        result
+            let mut interpreter = Interpreter::new_with_identifiers(arg_values);
+
+            let result = interpreter.evaluate(function.children[1].clone());
+
+            result
+        } else {
+            panic!("Expected a function");
+        }
     }
 
     fn parse_value(&self, node: &Node) -> Value {
@@ -474,6 +484,7 @@ impl Interpreter {
             Value::String(val) => print!("{}", val),
             Value::Boolean(val) => print!("{}", val),
             Value::Null => print!("null"),
+            Value::Function(_) => print!("function"),
             Value::List(val) => {
                 print!("[");
                 for (i, v) in val.iter().enumerate() {

@@ -1,0 +1,61 @@
+let tree = [ 1, [ 2, [ 4, [ ], [] ], [ 5, [], [] ] ], [ 3, [ 6, [], [] ], [ 7, [], [] ] ] ]
+
+funk height(tree) {
+    if len(tree) > 0 {
+        let right = height(tree[1])
+        let left = height(tree[2])
+        if right > left {
+            right + 1
+        } else {
+            left + 1
+        }
+    } else {
+        0
+    }
+}
+
+
+println(height(tree))
+
+funk preorder(root, do_something) {
+    if len(root) > 0 {
+        do_something(head(root))
+        preorder(root[1], do_something)
+        preorder(root[2], do_something)
+    }
+}
+
+funk do_something(v) {
+   println(v * 2) 
+}
+
+
+preorder(tree, do_something)
+
+println(type(do_something))
+
+
+let l = [1,2,3,4,5,6]
+
+funk double(x) {
+    x * 2
+}
+
+funk map(l, f) {
+    if len(l) != 0 {
+        [f(head(l))] + map(tail(l), f)
+    } else {
+        []
+    }
+}
+
+println(map(l, double))
+
+funk return_function() {
+    funk foo() {
+        println("you found me")
+    }
+}
+
+let bar = return_function()
+bar()
