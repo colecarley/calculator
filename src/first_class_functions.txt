@@ -1,3 +1,4 @@
+/*
 let tree = [ 1, [ 2, [ 4, [ ], [] ], [ 5, [], [] ] ], [ 3, [ 6, [], [] ], [ 7, [], [] ] ] ]
 
 funk height(tree) {
@@ -56,6 +57,16 @@ funk return_function() {
         println("you found me")
     }
 }
-
 let bar = return_function()
 bar()
+
+*/
+
+
+
+let foo = 2 / 2
+/*
+println(foo)
+let x = 12 * 4 / 2
+println(foo)
+*/

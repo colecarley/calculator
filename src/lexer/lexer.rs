@@ -1,7 +1,7 @@
 use crate::token::token::Token;
 use crate::token::token::TokenType;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum State {
     Start,
     Number,
@@ -16,6 +16,7 @@ enum State {
     Alpha,
     Comma,
     String,
+    Comment,
 }
 
 pub struct Lexer {
@@ -92,6 +93,36 @@ impl Lexer {
         for (i, line) in input.lines().enumerate() {
             self.current_line = i as i32 + 1;
             for c in line.chars() {
+                if self.state == State::String {
+                    if string.is_match(&c.to_string()) {
+                        self.push_string();
+                    }
+                    self.buffer += &c.to_string();
+                    continue;
+                }
+
+                if self.buffer.ends_with("/") && c == '*' {
+                    self.state = State::Comment;
+                    self.buffer = String::new();
+                    continue;
+                }
+
+                if self.state == State::Comment {
+                    if self.buffer.ends_with("*") && c == '/' {
+                        self.buffer = String::new();
+                        self.state = State::Start;
+                    } else {
+                        self.buffer += &c.to_string();
+                    }
+                    continue;
+                }
+
+                if self.buffer.ends_with("/") && c == '/' {
+                    self.state = State::Start;
+                    self.buffer = String::new();
+                    break;
+                }
+
                 if number.is_match(&c.to_string()) {
                     self.number(c);
                 } else if alpha.is_match(&c.to_string()) {
@@ -120,6 +151,16 @@ impl Lexer {
                     panic!("Invalid character: {}", c);
                 }
             }
+        }
+
+        if self.state == State::Alpha {
+            self.push_alpha();
+        }
+        if self.state == State::Number {
+            self.push_number();
+        }
+        if self.state == State::Operator {
+            self.push_operator();
         }
 
         return self.tokens.clone();
