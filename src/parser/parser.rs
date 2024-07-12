@@ -467,7 +467,7 @@ impl Parser {
                         self.next();
                         self.else_statement(&mut if_statement);
                     }
-                    _ => self.error(self.peek().clone(), "Invalid keyword"),
+                    _ => {}
                 }
             }
         }

@@ -1,39 +1,142 @@
-let singleton = [1]
-let doubleton = [1,2]
+let tree = [
+    1, 
+    [
+        2, 
+        [
+            4, [ ], []
+        ], 
+        [
+            5, [], []
+        ]
+    ], [
+        3, 
+        [
+            6, [], []
+        ], 
+        [
+            7, [], []
+        ]
+    ]
+]
 
-println(singleton[0])
+funk preorder(root) {
+    if len(root) > 0 {
+        print(head(root))
+        preorder(root[1])
+        preorder(root[2])
+    }
+}
 
-println(3)
+funk inorder(root) {
+    if len(root) > 0 {
+        inorder(root[1])
+        print(head(root))
+        inorder(root[2])
+    }
+}
 
-funk get() {
-    funk outer() {
-        funk inner() {
-            "hello"
+funk postorder(root) {
+    if len(root) > 0 {
+        postorder(root[1])
+        postorder(root[2])
+        print(head(root))
+    }   
+}
+
+preorder(tree)
+println("")
+inorder(tree)
+println("")
+postorder(tree)
+println("")
+
+
+funk height(tree) {
+    if len(tree) > 0 {
+        let right = height(tree[1])
+        let left = height(tree[2])
+        if right > left {
+            right + 1
+        } else {
+            left + 1
         }
-        inner()
-    }
-    outer()
-}
-
-println(get())
-
-
-let foo = []
-
-funk print_elements(list) {
-    if len(list) == 0 {
-        println("done")
     } else {
-        println(head(list))
-        print_elements(tail(list))
+        0
     }
 }
 
-print_elements([1,2,3])
-
-
-if true {
-    println("it is true")
-} else {
-    println("it is false")
+funk create_node(value) {
+    [value, [], []]
 }
+
+funk create_binary_tree(vals) {
+    funk helper(root, vals) {
+        if len(vals) > 0 {
+            let new_node = add(root, head(vals))
+            helper(new_node, tail(vals))
+        } else {
+            root
+        }
+    }
+
+    funk add(root, val) {
+        if height(root) == 0 {
+            create_node(val)
+        } else {
+            if height(root[1]) <= height(root[2]) {
+                let left = add(root[1], val)
+                [head(root), left, root[2]]
+            } else {
+                let right = add(root[2], val)
+                [head(root), root[1], right]
+            }           
+        }
+    }
+
+
+    let root = create_node(head(vals)) 
+    helper(root, tail(vals))
+}
+
+println(height(tree))
+
+let vals = [1,2,3,4,5,6,7]
+let btree = create_binary_tree(vals)
+println(btree)
+println(height(btree))
+
+let nums = [7,6,5,4,3,2,1]
+funk sort_values(nums) {
+    funk helper(nums) {
+        if len(nums) < 2 {
+            nums
+        } else {
+            if len(nums) == 2 {
+                if nums[0] > nums[1] {
+                    [nums[1], nums[0]]
+                } else {
+                    nums
+                }
+            } else {
+                if nums[0] > nums[1] {
+                    [nums[1]] + helper([nums[0]] + tail(tail(nums)))
+                } else {
+                    [nums[0]] + helper(tail(nums))
+                }
+            }
+        }
+    }
+
+    funk loop(nums, i) {
+        if i == 0 {
+            nums
+        } else {
+            let new_nums = helper(nums)
+            loop(new_nums, i - 1)
+        }
+    }    
+
+    loop(nums, len(nums))
+}
+
+println(sort_values(nums))

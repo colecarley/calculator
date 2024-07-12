@@ -21,6 +21,7 @@ pub enum Value {
     Boolean(bool),
     Float(f32),
     List(Vec<Value>),
+    Null,
 }
 
 #[derive(Clone, Debug)]

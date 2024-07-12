@@ -106,6 +106,7 @@ impl Interpreter {
                             Value::String(_) => Value::String("string".to_string()),
                             Value::Boolean(_) => Value::String("bool".to_string()),
                             Value::List(_) => Value::String("list".to_string()),
+                            Value::Null => Value::String("null".to_string()),
                         };
                     }
                     "is_bool" => {
@@ -197,9 +198,17 @@ impl Interpreter {
             };
 
             if condition {
-                return self.evaluate_helper(&root.children[1]);
+                if root.children.len() >= 2 {
+                    return self.evaluate_helper(&root.children[1]);
+                } else {
+                    return Value::Null;
+                }
             } else {
-                return self.evaluate_helper(&root.children[2]);
+                if root.children.len() >= 3 {
+                    return self.evaluate_helper(&root.children[2]);
+                } else {
+                    return Value::Null;
+                }
             }
         }
 
@@ -464,6 +473,7 @@ impl Interpreter {
             Value::Float(val) => print!("{}", val),
             Value::String(val) => print!("{}", val),
             Value::Boolean(val) => print!("{}", val),
+            Value::Null => print!("null"),
             Value::List(val) => {
                 print!("[");
                 for (i, v) in val.iter().enumerate() {
