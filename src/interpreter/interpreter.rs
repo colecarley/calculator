@@ -6,19 +6,68 @@ use crate::{
     token::token::Value,
 };
 
+struct ScopeManager {
+    scopes: Vec<Box<HashMap<String, Value>>>,
+}
+
+impl ScopeManager {
+    fn new() -> ScopeManager {
+        let scopes = vec![Box::new(HashMap::new())];
+        ScopeManager { scopes }
+    }
+
+    fn insert_identifier(&mut self, identifier: String, value: Value) {
+        let top = self.scopes.last().unwrap();
+        let mut new_top = top.clone();
+        new_top.insert(identifier, value);
+        self.scopes.pop();
+        self.scopes.push(new_top);
+    }
+
+    fn get_identifier(&self, identifier: &str) -> Value {
+        for scope in self.scopes.iter().rev() {
+            if scope.contains_key(identifier) {
+                return scope.get(identifier).unwrap().clone();
+            }
+        }
+        panic!("Identifier not found");
+    }
+
+    fn contains_identifier(&self, identifier: &str) -> bool {
+        for scope in self.scopes.iter().rev() {
+            if scope.contains_key(identifier) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    fn new_scope_with_values(&mut self, values: HashMap<String, Value>) {
+        self.new_scope();
+        for (key, value) in values {
+            self.insert_identifier(key, value);
+        }
+    }
+
+    fn new_scope(&mut self) {
+        let top = self.scopes.last().unwrap();
+        let new_top = top.clone();
+        self.scopes.push(new_top);
+    }
+
+    fn pop_scope(&mut self) {
+        self.scopes.pop();
+    }
+}
+
 pub struct Interpreter {
-    identifiers: HashMap<String, Value>,
+    scope_manager: ScopeManager,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
-        Interpreter {
-            identifiers: HashMap::new(),
-        }
-    }
-
-    fn new_with_identifiers(identifiers: HashMap<String, Value>) -> Interpreter {
-        Interpreter { identifiers }
+        let scope_manager = ScopeManager::new();
+        Interpreter { scope_manager }
     }
 
     pub fn evaluate(&mut self, root: Node) -> Value {
@@ -39,7 +88,8 @@ impl Interpreter {
                             .as_ref()
                             .expect("expected an identifier");
                         let value = self.evaluate_helper(&root.children[1]);
-                        self.identifiers.insert(identifier.clone(), value.clone());
+                        self.scope_manager
+                            .insert_identifier(identifier.clone(), value.clone());
                         return value;
                     }
                     "declaration" => {
@@ -47,7 +97,8 @@ impl Interpreter {
                             .value
                             .as_ref()
                             .expect("expected an identifier");
-                        self.identifiers.insert(
+
+                        self.scope_manager.insert_identifier(
                             identifier.clone(),
                             Value::Function(root.children[1].clone()),
                         );
@@ -134,17 +185,15 @@ impl Interpreter {
                         };
                     }
                     "is_function" => {
-                        return match self.identifiers.contains_key(val) {
-                            true => match self.identifiers.get(val) {
-                                Some(val) => {
-                                    if let Value::Function(_) = val {
-                                        Value::Boolean(true)
-                                    } else {
-                                        Value::Boolean(false)
-                                    }
+                        return match self.scope_manager.contains_identifier(val) {
+                            true => {
+                                let val = self.scope_manager.get_identifier(val);
+                                if let Value::Function(_) = val {
+                                    Value::Boolean(true)
+                                } else {
+                                    Value::Boolean(false)
                                 }
-                                None => Value::Boolean(false),
-                            },
+                            }
                             false => Value::Boolean(false),
                         };
                     }
@@ -156,13 +205,14 @@ impl Interpreter {
                         return Value::String(input.trim().to_string());
                     }
                     _ => {
-                        if self.identifiers.contains_key(val) {
+                        if self.scope_manager.contains_identifier(val) {
                             let values: Vec<Value> = root.children[0]
                                 .children
                                 .iter()
                                 .map(|child| self.evaluate_helper(child))
                                 .collect();
-                            return self.evaluate_function(val.clone(), values);
+                            let function = self.scope_manager.get_identifier(val).clone();
+                            return self.evaluate_function(&function, values);
                         }
                     }
                 },
@@ -228,10 +278,7 @@ impl Interpreter {
                 panic!("Expected a number");
             };
 
-            let indexable = self
-                .identifiers
-                .get(indexable_name)
-                .expect("expected an known identifier");
+            let indexable = self.scope_manager.get_identifier(indexable_name);
             if let Value::String(string) = indexable {
                 return Value::String(
                     (string.as_bytes()[index as usize].clone() as char).to_string(),
@@ -414,12 +461,7 @@ impl Interpreter {
         }
     }
 
-    fn evaluate_function(&mut self, function_name: String, parameter_values: Vec<Value>) -> Value {
-        if !self.identifiers.contains_key(&function_name) {
-            panic!("Function not found");
-        }
-
-        let function = self.identifiers.get(&function_name).unwrap();
+    fn evaluate_function(&mut self, function: &Value, parameter_values: Vec<Value>) -> Value {
         if let Value::Function(function) = function {
             let arg_names: Vec<String> = function.children[0]
                 .children
@@ -433,16 +475,29 @@ impl Interpreter {
                 })
                 .collect();
 
-            let mut arg_values: HashMap<String, Value> = self.identifiers.clone();
+            let mut arg_values = HashMap::new();
             for (i, arg_name) in arg_names.iter().enumerate() {
                 arg_values.insert(arg_name.clone(), parameter_values[i].clone());
             }
 
-            let mut interpreter = Interpreter::new_with_identifiers(arg_values);
+            self.scope_manager.new_scope_with_values(arg_values);
+            for child in function.children[1]
+                .children
+                .iter()
+                .take(function.children[1].children.len() - 1)
+            {
+                self.evaluate_helper(child);
+            }
+            let result = self.evaluate_helper(
+                function.children[1]
+                    .children
+                    .last()
+                    .expect("expected a child"),
+            );
 
-            let result = interpreter.evaluate(function.children[1].clone());
+            self.scope_manager.pop_scope();
 
-            result
+            return result;
         } else {
             panic!("Expected a function");
         }
@@ -464,13 +519,12 @@ impl Interpreter {
             }
         } else if node.node_type == NodeType::Identifier {
             return self
-                .identifiers
-                .get(
+                .scope_manager
+                .get_identifier(
                     node.value
                         .as_ref()
                         .expect("expected an identifier for value"),
                 )
-                .unwrap()
                 .clone();
         } else {
             panic!("Invalid value");
@@ -497,4 +551,28 @@ impl Interpreter {
             }
         }
     }
+
+    // fn get_top_level_identifiers(&self) -> HashMap<String, Value> {
+    //     return self.identifiers.last().unwrap().clone();
+    // }
+
+    // fn insert_top_level_identifier(&mut self, identifier: String, value: Value) {
+    //     let top = self.identifiers.last().unwrap();
+    //     let mut new_top = top.clone();
+    //     new_top.insert(identifier, value);
+    //     self.identifiers.pop();
+    //     self.identifiers.push(new_top);
+    // }
+
+    // fn get_function(&self, function_name: &str) -> Value {
+    //     if !self.get_top_level_identifiers().contains_key(function_name) {
+    //         panic!("Function not found");
+    //     }
+
+    //     return self
+    //         .get_top_level_identifiers()
+    //         .get(function_name)
+    //         .unwrap()
+    //         .clone();
+    // }
 }
