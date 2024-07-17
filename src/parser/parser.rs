@@ -32,6 +32,7 @@ Args -> ',' Expr ArgsTail
 FunctionCall -> Identifier '(' Args ')'
 
 Expr   -> Term ExprTail
+    | '-' Term ExprTail
 ExprTail -> '+' Term ExprTail
          | '-' Term ExprTail
          | ε
@@ -155,6 +156,27 @@ impl Parser {
                     // panic!("Invalid keyword");
                     self.error(self.peek().clone(), "Invalid keyword");
                 }
+            }
+        }
+
+        if !self.is_eof() {
+            if self.peek().token_type == TokenType::Operator && self.peek().value == "-".to_string()
+            {
+                let mut operator = Node {
+                    value: Some(self.peek().value.clone()),
+                    node_type: NodeType::Operation,
+                    children: Vec::new(),
+                };
+                self.next();
+                let mut term = Node {
+                    value: None,
+                    node_type: NodeType::Term,
+                    children: Vec::new(),
+                };
+                self.term(&mut term);
+                operator.children.push(term);
+                root.children.push(operator);
+                return;
             }
         }
 

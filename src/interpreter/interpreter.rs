@@ -481,6 +481,9 @@ impl Interpreter {
             }
             "-" => {
                 if let Value::Number(first) = values[0] {
+                    if values.len() == 1 {
+                        return Value::Number(-first);
+                    }
                     if let Value::Number(second) = values[1] {
                         return Value::Number(first - second);
                     } else {
