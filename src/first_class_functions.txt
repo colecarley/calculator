@@ -1,21 +1,8 @@
 
-let list = [1,2,3,4,5]
-
-1  * 2 + 1 * list[len(list) - 1]
-
-
-funk get_name() {
-    println("whats your name")
-    let name = input()
-    name
+funk one() {
+    1
 }
 
-let name = get_name()
-print("hello ")
-println(name)
+let x = [1,2,3]
 
-funk make_list(x, y, z) {
-    [x, y, z]
-}
-
-println(make_list(1,2,3))
+x[one()]

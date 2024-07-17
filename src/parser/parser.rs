@@ -285,12 +285,14 @@ impl Parser {
             root.children.push(node);
             self.next();
         } else if self.peek().token_type == TokenType::Identifier {
+            self.next();
             if !self.is_eof() {
-                self.next();
                 if self.peek().token_type == TokenType::LeftParen {
                     self.prev();
                     self.function_call(root);
-                } else if self.peek().token_type == TokenType::LeftBracket {
+                    return;
+                }
+                if self.peek().token_type == TokenType::LeftBracket {
                     let mut node = Node {
                         value: None,
                         node_type: NodeType::Index,
@@ -299,17 +301,17 @@ impl Parser {
                     self.prev();
                     self.index(&mut node);
                     root.children.push(node);
-                } else {
-                    self.prev();
-                    let node = Node {
-                        value: Some(self.peek().value.clone()),
-                        node_type: NodeType::Identifier,
-                        children: Vec::new(),
-                    };
-                    root.children.push(node);
-                    self.next();
+                    return;
                 }
             }
+            self.prev();
+            let node = Node {
+                value: Some(self.peek().value.clone()),
+                node_type: NodeType::Identifier,
+                children: Vec::new(),
+            };
+            root.children.push(node);
+            self.next();
         } else if self.peek().token_type == TokenType::Keyword {
             match self.peek().value.as_str() {
                 "true" | "false" => {
@@ -692,8 +694,6 @@ impl Parser {
     }
 
     fn peek(&self) -> &Token {
-        // TODO: this should return a result
-        // if none, then call self.error
         &self.tokens[self.position]
     }
 

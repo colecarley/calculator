@@ -77,6 +77,8 @@ impl Lexer<'_> {
         let right_bracket = Regex::new(r"\]").unwrap();
         let comma: Regex = Regex::new(r",").unwrap();
         let string: Regex = Regex::new(r#"""#).unwrap();
+        let semicolon = Regex::new(r";").unwrap();
+        let newline = Regex::new(r"\n").unwrap();
 
         let input = self.input.clone();
         for (i, line) in input.lines().enumerate() {
@@ -84,10 +86,10 @@ impl Lexer<'_> {
             for c in line.chars() {
                 if self.state == State::String {
                     if string.is_match(&c.to_string()) {
+                        self.buffer += &c.to_string();
                         self.push_string();
+                        continue;
                     }
-                    self.buffer += &c.to_string();
-                    continue;
                 }
 
                 if self.buffer.ends_with("/") && c == '*' {
@@ -123,6 +125,10 @@ impl Lexer<'_> {
                 } else if left_paren.is_match(&c.to_string()) {
                     self.left_paren(c);
                 } else if whitespace.is_match(&c.to_string()) {
+                    self.whitespace();
+                } else if semicolon.is_match(&c.to_string()) {
+                    self.whitespace();
+                } else if newline.is_match(&c.to_string()) {
                     self.whitespace();
                 } else if left_brace.is_match(&c.to_string()) {
                     self.left_brace(c);

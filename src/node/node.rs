@@ -19,7 +19,7 @@ pub enum NodeType {
     Block,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Node {
     pub value: Option<String>,
     pub node_type: NodeType,
