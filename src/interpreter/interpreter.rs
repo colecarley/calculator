@@ -79,73 +79,79 @@ impl Interpreter {
     }
 
     fn evaluate_helper(&mut self, root: &Node) -> Value {
-        if root.node_type == NodeType::FunctionCall {
-            let val = root.value.as_ref().unwrap().as_str();
-            if self.scope_manager.contains_identifier(val) {
-                return self.handle_function_call(root, val);
-            } else {
-                match val {
-                    "print" => return self.handle_print(root),
-                    "println" => return self.handle_println(root),
-                    "head" => return self.handle_head(root),
-                    "tail" => return self.handle_tail(root),
-                    "len" => return self.handle_len(root),
-                    "type" => return self.handle_type(root),
-                    "is_bool" => return self.handle_is_bool(root),
-                    "is_number" => return self.handle_is_number(root),
-                    "is_string" => return self.handle_is_string(root),
-                    "is_list" => return self.handle_is_list(root),
-                    "is_function" => return self.handle_is_function(val),
-                    "input" => return self.handle_input(),
-                    _ => {
-                        panic!("Function not found");
+        match root.node_type {
+            NodeType::FunctionCall => {
+                let val = root.value.as_ref().unwrap().as_str();
+                if self.scope_manager.contains_identifier(val) {
+                    return self.handle_function_call(root, val);
+                } else {
+                    match val {
+                        "print" => return self.handle_print(root),
+                        "println" => return self.handle_println(root),
+                        "head" => return self.handle_head(root),
+                        "tail" => return self.handle_tail(root),
+                        "len" => return self.handle_len(root),
+                        "type" => return self.handle_type(root),
+                        "is_bool" => return self.handle_is_bool(root),
+                        "is_number" => return self.handle_is_number(root),
+                        "is_string" => return self.handle_is_string(root),
+                        "is_list" => return self.handle_is_list(root),
+                        "is_function" => return self.handle_is_function(val),
+                        "input" => return self.handle_input(),
+                        _ => {
+                            panic!("Function not found");
+                        }
                     }
                 }
             }
+            NodeType::Assignment => {
+                return self.handle_assignment(root);
+            }
+            NodeType::Declaration => {
+                return self.handle_declaration(root);
+            }
+            NodeType::Block => {
+                return self.handle_block(root);
+            }
+            NodeType::List => {
+                return self.handle_list(root);
+            }
+            NodeType::If => {
+                return self.handle_if(root);
+            }
+            NodeType::Index => {
+                return self.handle_index(root);
+            }
+            NodeType::Operation => {
+                return self.handle_operator(root);
+            }
+            NodeType::Identifier | NodeType::Literal => {
+                return self.parse_value(root);
+            }
+            NodeType::Factor | NodeType::Term | NodeType::Expression | NodeType::Args => {
+                // just wrapper nodes
+                if root.children.len() != 1 {
+                    panic!("Invalid number of children for {:?}", root.node_type);
+                }
+                return self.evaluate_helper(&root.children[0]);
+            }
+            NodeType::Parameters => {
+                // just wrapper nodes
+                panic!("Parameters node should not be evaluated");
+            }
+            NodeType::Program => {
+                // just wrapper nodes
+                panic!("Program node should not be evaluated");
+            }
+            _ => {
+                panic!("Invalid node type {:?}", root.node_type);
+            }
         }
-
-        if root.node_type == NodeType::Assignment {
-            return self.handle_assignment(root);
-        }
-
-        if root.node_type == NodeType::Declaration {
-            return self.handle_declaration(root);
-        }
-
-        if root.node_type == NodeType::Block {
-            return self.handle_block(root);
-        }
-
-        if root.node_type == NodeType::List {
-            return self.handle_list(root);
-        }
-
-        if root.children.len() == 0 {
-            return self.parse_value(root);
-        }
-
-        if root.children.len() == 1 {
-            return self.evaluate_helper(&root.children[0]);
-        }
-
-        if root.node_type == NodeType::If {
-            return self.handle_if(root);
-        }
-
-        if root.node_type == NodeType::Index {
-            return self.handle_index(root);
-        }
-
-        if root.node_type == NodeType::Operation {
-            return self.handle_operator(root);
-        }
-
-        panic!("Invalid node type {:?}", root.node_type);
     }
 
     fn evaluate_function(&mut self, function: &Value, parameter_values: Vec<Value>) -> Value {
         if let Value::Function(function) = function {
-            let arg_names: Vec<String> = function.children[0]
+            let param_names: Vec<String> = function.children[0]
                 .children
                 .iter()
                 .map(|child| {
@@ -158,8 +164,8 @@ impl Interpreter {
                 .collect();
 
             let mut arg_values = HashMap::new();
-            for (i, arg_name) in arg_names.iter().enumerate() {
-                arg_values.insert(arg_name.clone(), parameter_values[i].clone());
+            for (i, param_name) in param_names.iter().enumerate() {
+                arg_values.insert(param_name.clone(), parameter_values[i].clone());
             }
 
             self.scope_manager.new_scope_with_values(arg_values);
@@ -170,6 +176,7 @@ impl Interpreter {
             {
                 self.evaluate_helper(child);
             }
+
             let result = self.evaluate_helper(
                 function.children[1]
                     .children

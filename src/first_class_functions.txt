@@ -1,12 +1,21 @@
 
-let foobar = 3
-println(foobar)
+let list = [1,2,3,4,5]
 
-funk write_name(x) {
-    println("whats your name?")
+1  * 2 + 1 * list[len(list) - 1]
+
+
+funk get_name() {
+    println("whats your name")
     let name = input()
-    print("hello ")
-    println(name)
+    name
 }
 
-write_name(3)
+let name = get_name()
+print("hello ")
+println(name)
+
+funk make_list(x, y, z) {
+    [x, y, z]
+}
+
+println(make_list(1,2,3))

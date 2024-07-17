@@ -17,19 +17,19 @@ If -> Keyword Expr '{' Expr '}'
 Else -> Keyword '{' Expr '}'
     | Keyword If
 
-Funk -> Keyword Identifier '(' Args ')' '{' Expr '}'
+Funk -> Keyword Identifier '(' Params ')' '{' Expr '}'
 
-Args -> Identifier ArgsTail
+Params -> Identifier ParamsTail
     | ε
-ArgsTail -> ',' Identifier ArgsTail
-    | ε
-
-Parameters -> Expr ParametersTail
-    | ε
-ParametersTail -> ',' Expr ParametersTail
+ParamsTail -> ',' Identifier ParamsTail
     | ε
 
-FunctionCall -> Identifier '(' A ')'
+Args -> Expr ArgsTail
+    | ε
+Args -> ',' Expr ArgsTail
+    | ε
+
+FunctionCall -> Identifier '(' Args ')'
 
 Expr   -> Term ExprTail
 ExprTail -> '+' Term ExprTail
@@ -524,9 +524,9 @@ impl Parser {
             children: Vec::new(),
         };
 
-        let mut args = Node {
+        let mut params = Node {
             value: None,
-            node_type: NodeType::Args,
+            node_type: NodeType::Parameters,
             children: Vec::new(),
         };
 
@@ -536,14 +536,14 @@ impl Parser {
 
         self.next();
         if self.peek().token_type != TokenType::RightParen {
-            self.args(&mut args);
+            self.parameters(&mut params);
         }
 
         if self.peek().token_type != TokenType::RightParen {
             self.error(self.peek().clone(), "Expected right parenthesis");
         }
 
-        function.children.push(args);
+        function.children.push(params);
 
         self.next();
 
@@ -571,7 +571,7 @@ impl Parser {
         root.children.push(operation);
     }
 
-    fn args(&mut self, root: &mut Node) {
+    fn parameters(&mut self, root: &mut Node) {
         if self.peek().token_type != TokenType::Identifier {
             self.error(self.peek().clone(), "Expected identifier");
         }
@@ -585,16 +585,16 @@ impl Parser {
         root.children.push(identifier);
 
         self.next();
-        self.args_tail(root);
+        self.parameters_tail(root);
     }
 
-    fn args_tail(&mut self, root: &mut Node) {
+    fn parameters_tail(&mut self, root: &mut Node) {
         if self.peek().token_type != TokenType::Comma {
             return;
         }
 
         self.next();
-        self.args(root);
+        self.parameters(root);
     }
 
     fn function_call(&mut self, root: &mut Node) {
@@ -610,14 +610,14 @@ impl Parser {
             self.error(self.peek().clone(), "Expected left parenthesis");
         }
 
-        let mut parameters = Node {
+        let mut args = Node {
             value: None,
-            node_type: NodeType::Parameters,
+            node_type: NodeType::Args,
             children: Vec::new(),
         };
 
         self.next();
-        self.parameters(&mut parameters);
+        self.args(&mut args);
 
         if self.peek().token_type != TokenType::RightParen {
             self.error(self.peek().clone(), "Expected right parenthesis");
@@ -625,11 +625,11 @@ impl Parser {
 
         self.next();
 
-        operation.children.push(parameters);
+        operation.children.push(args);
         root.children.push(operation);
     }
 
-    fn parameters(&mut self, root: &mut Node) {
+    fn args(&mut self, root: &mut Node) {
         if self.peek().token_type == TokenType::RightParen {
             return;
         }
@@ -642,16 +642,16 @@ impl Parser {
 
         self.expression(&mut expression);
         root.children.push(expression);
-        self.parameters_tail(root);
+        self.args_tail(root);
     }
 
-    fn parameters_tail(&mut self, root: &mut Node) {
+    fn args_tail(&mut self, root: &mut Node) {
         if self.peek().token_type != TokenType::Comma {
             return;
         }
 
         self.next();
-        self.parameters(root);
+        self.args(root);
     }
 
     fn index(&mut self, root: &mut Node) {
