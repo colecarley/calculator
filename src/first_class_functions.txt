@@ -1,11 +1,12 @@
 
+let foobar = 3
+println(foobar)
 
-
-funk write_name() {
+funk write_name(x) {
     println("whats your name?")
     let name = input()
     print("hello ")
     println(name)
 }
 
-write_name()
+write_name(3)

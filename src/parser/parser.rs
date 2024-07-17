@@ -103,7 +103,7 @@ impl Parser {
             node_type: NodeType::Program,
             children: Vec::new(),
         };
-        while self.position < self.tokens.len() {
+        while !self.is_eof() {
             let mut expression = Node {
                 value: None,
                 node_type: NodeType::Expression,
@@ -168,7 +168,7 @@ impl Parser {
     }
 
     fn expression_tail(&mut self, root: &mut Node, first_term: &Node) {
-        if (self.position) >= self.tokens.len() {
+        if self.is_eof() {
             root.children.push(first_term.clone());
             return;
         }
@@ -230,7 +230,7 @@ impl Parser {
     }
 
     fn term_tail(&mut self, root: &mut Node, first_term: &Node) {
-        if (self.position) >= self.tokens.len() {
+        if self.is_eof() {
             root.children.push(first_term.clone());
             return;
         }
@@ -285,7 +285,7 @@ impl Parser {
             root.children.push(node);
             self.next();
         } else if self.peek().token_type == TokenType::Identifier {
-            if (self.position + 1) < self.tokens.len() {
+            if !self.is_eof() {
                 self.next();
                 if self.peek().token_type == TokenType::LeftParen {
                     self.prev();
@@ -349,8 +349,8 @@ impl Parser {
 
     fn assignment(&mut self, root: &mut Node) {
         let mut operation = Node {
-            value: Some("=".to_string()),
-            node_type: NodeType::Operation,
+            value: None,
+            node_type: NodeType::Assignment,
             children: Vec::new(),
         };
 
@@ -460,7 +460,7 @@ impl Parser {
         if_statement.children.push(expression);
         if_statement.children.push(block);
 
-        if self.position < self.tokens.len() {
+        if !self.is_eof() {
             if self.peek().token_type == TokenType::Keyword {
                 match self.peek().value.as_str() {
                     "else" => {
@@ -500,8 +500,8 @@ impl Parser {
 
     fn function_declaration(&mut self, root: &mut Node) {
         let mut operation = Node {
-            value: Some("declaration".to_string()),
-            node_type: NodeType::Operation,
+            value: None,
+            node_type: NodeType::Declaration,
             children: Vec::new(),
         };
 
@@ -600,7 +600,7 @@ impl Parser {
     fn function_call(&mut self, root: &mut Node) {
         let mut operation = Node {
             value: Some(self.peek().value.clone()),
-            node_type: NodeType::Operation,
+            node_type: NodeType::FunctionCall,
             children: Vec::new(),
         };
 
@@ -695,6 +695,10 @@ impl Parser {
         // TODO: this should return a result
         // if none, then call self.error
         &self.tokens[self.position]
+    }
+
+    fn is_eof(&self) -> bool {
+        self.position == self.tokens.len()
     }
 
     fn error(&self, token: Token, message: &str) {

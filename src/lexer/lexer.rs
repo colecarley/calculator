@@ -19,56 +19,45 @@ enum State {
     Comment,
 }
 
-pub struct Lexer {
+pub struct Lexer<'a> {
     input: String,
     tokens: Vec<Token>,
     state: State,
     buffer: String,
-    keywords: Vec<String>,
-    operators: Vec<String>,
+    keywords: Vec<&'a str>,
+    operators: Vec<&'a str>,
     current_line: i32,
 }
 
-impl Lexer {
-    pub fn new(input: String) -> Lexer {
+impl Lexer<'_> {
+    pub fn new<'a>(input: String) -> Lexer<'a> {
         Lexer {
             input,
             tokens: Vec::new(),
             state: State::Start,
             buffer: String::new(),
             keywords: vec![
-                "let".to_string(),
-                "if".to_string(),
-                "else".to_string(),
-                "funk".to_string(),
-                "print".to_string(),
-                "println".to_string(),
-                "true".to_string(),
-                "false".to_string(),
-                "head".to_string(),
-                "tail".to_string(),
-                "len".to_string(),
-                "type".to_string(),
-                "is_bool".to_string(),
-                "is_number".to_string(),
-                "is_string".to_string(),
-                "is_list".to_string(),
-                "is_function".to_string(),
-                "input".to_string(),
+                "let",
+                "if",
+                "else",
+                "funk",
+                "print",
+                "println",
+                "true",
+                "false",
+                "head",
+                "tail",
+                "len",
+                "type",
+                "is_bool",
+                "is_number",
+                "is_string",
+                "is_list",
+                "is_function",
+                "input",
             ],
             operators: vec![
-                "+".to_string(),
-                "-".to_string(),
-                "*".to_string(),
-                "/".to_string(),
-                "%".to_string(),
-                "=".to_string(),
-                "==".to_string(),
-                ">=".to_string(),
-                "<=".to_string(),
-                ">".to_string(),
-                "<".to_string(),
-                "!=".to_string(),
+                "+", "-", "*", "/", "%", "=", "==", ">=", "<=", ">", "<", "!=",
             ],
             current_line: 0,
         }
@@ -329,7 +318,7 @@ impl Lexer {
     }
 
     fn push_alpha(&mut self) {
-        if self.keywords.contains(&self.buffer) {
+        if self.keywords.contains(&self.buffer.as_str()) {
             self.tokens.push(Token::new(
                 TokenType::Keyword,
                 self.buffer.clone(),
@@ -355,7 +344,7 @@ impl Lexer {
     }
 
     fn push_operator(&mut self) {
-        if !self.operators.contains(&self.buffer) {
+        if !self.operators.contains(&self.buffer.as_str()) {
             panic!("Invalid operator: {}", self.buffer,);
         }
         self.tokens.push(Token::new(
