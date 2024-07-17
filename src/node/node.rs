@@ -7,6 +7,7 @@ pub enum NodeType {
     Operation,
     Declaration,
     Assignment,
+    Reassignment,
     FunctionCall,
     Literal,
     If,

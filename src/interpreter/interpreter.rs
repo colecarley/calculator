@@ -22,6 +22,16 @@ impl ScopeManager {
         top.insert(identifier, value);
     }
 
+    fn reassign_identifier(&mut self, identifier: String, value: Value) {
+        for scope in self.scopes.iter_mut().rev() {
+            if scope.contains_key(&identifier) {
+                scope.insert(identifier, value);
+                return;
+            }
+        }
+        panic!("Identifier not found");
+    }
+
     fn get_identifier(&self, identifier: &str) -> Value {
         for scope in self.scopes.iter().rev() {
             if scope.contains_key(identifier) {
@@ -48,9 +58,7 @@ impl ScopeManager {
     }
 
     fn new_scope(&mut self) {
-        let top = self.scopes.last().unwrap();
-        let new_top = top.clone();
-        self.scopes.push(new_top);
+        self.scopes.push(HashMap::new());
         self.num += 1;
     }
 
@@ -113,6 +121,9 @@ impl Interpreter {
             }
             NodeType::Assignment => {
                 return self.handle_assignment(root);
+            }
+            NodeType::Reassignment => {
+                return self.handle_reassignment(root);
             }
             NodeType::Declaration => {
                 return self.handle_declaration(root);
@@ -378,6 +389,17 @@ impl Interpreter {
         let value = self.evaluate_helper(&root.children[1], &mut false);
         self.scope_manager
             .insert_identifier(identifier.clone(), value.clone());
+        return value;
+    }
+
+    fn handle_reassignment(&mut self, root: &Node) -> Value {
+        let identifier = root.children[0]
+            .value
+            .as_ref()
+            .expect("expected an identifier");
+        let value = self.evaluate_helper(&root.children[1], &mut false);
+        self.scope_manager
+            .reassign_identifier(identifier.clone(), value.clone());
         return value;
     }
 

@@ -130,6 +130,31 @@ fn test_assignment_with_string() {
 }
 
 #[test]
+fn test_reassignment() {
+    let input = "let x = 6; x = 12; x;".to_string();
+    assert_eq!(evaluate(input), Value::Number(12));
+}
+
+#[test]
+fn test_reassignment_with_expression() {
+    let input = "let x = 6; x = x + 6; x;".to_string();
+    assert_eq!(evaluate(input), Value::Number(12));
+}
+
+#[test]
+fn test_reassignment_with_boolean() {
+    let input = "let x = 6; x = x == 6; x;".to_string();
+    assert_eq!(evaluate(input), Value::Boolean(true));
+}
+
+#[test]
+
+fn test_reassignment_with_string() {
+    let input = "let x = \"hello\"; x = x + \" world\"; x;".to_string();
+    assert_eq!(evaluate(input), Value::String("hello world".to_string()));
+}
+
+#[test]
 fn test_assignment_with_list() {
     let input = "let x = [1, 2, 3]; x;".to_string();
     assert_eq!(

@@ -1,7 +1,5 @@
 
+let x = 3
 
-println(foobar())
+x = 4
 
-funk foobar() {
-    3
-}

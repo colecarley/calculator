@@ -11,6 +11,8 @@ Statement -> Let
 
 Let -> Keyword Identifier '=' Expr
 
+Reassign -> Identifier '=' Expr
+
 If -> Keyword Expr '{' Expr '}'
     | Keyword Expr '{' Expr '}' Else
 
@@ -133,7 +135,7 @@ impl Parser {
             match self.peek().value.as_str() {
                 "let" => {
                     self.next();
-                    self.assignment(root);
+                    self.assignment(root, false);
                     return;
                 }
                 "if" => {
@@ -177,6 +179,18 @@ impl Parser {
                 operator.children.push(term);
                 root.children.push(operator);
                 return;
+            }
+
+            if self.peek().token_type == TokenType::Identifier {
+                self.next();
+                if !self.is_eof() {
+                    if self.peek().token_type == TokenType::Operator && self.peek().value == "=" {
+                        self.prev();
+                        self.assignment(root, true);
+                        return;
+                    }
+                }
+                self.prev();
             }
         }
 
@@ -407,10 +421,14 @@ impl Parser {
         }
     }
 
-    fn assignment(&mut self, root: &mut Node) {
+    fn assignment(&mut self, root: &mut Node, reassign: bool) {
         let mut operation = Node {
             value: None,
-            node_type: NodeType::Assignment,
+            node_type: if reassign {
+                NodeType::Reassignment
+            } else {
+                NodeType::Assignment
+            },
             children: Vec::new(),
         };
 
