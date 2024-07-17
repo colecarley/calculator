@@ -72,13 +72,17 @@ impl Interpreter {
 
     pub fn evaluate(&mut self, root: Node) -> Value {
         let mut result = Value::Number(0);
+        let mut early_return = false;
         for child in &root.children {
-            result = self.evaluate_helper(child);
+            result = self.evaluate_helper(child, &mut early_return);
+            if early_return {
+                break;
+            }
         }
         result
     }
 
-    fn evaluate_helper(&mut self, root: &Node) -> Value {
+    fn evaluate_helper(&mut self, root: &Node, early_return: &mut bool) -> Value {
         match root.node_type {
             NodeType::FunctionCall => {
                 let val = root.value.as_ref().unwrap().as_str();
@@ -112,13 +116,13 @@ impl Interpreter {
                 return self.handle_declaration(root);
             }
             NodeType::Block => {
-                return self.handle_block(root);
+                return self.handle_block(root, early_return);
             }
             NodeType::List => {
                 return self.handle_list(root);
             }
             NodeType::If => {
-                return self.handle_if(root);
+                return self.handle_if(root, early_return);
             }
             NodeType::Index => {
                 return self.handle_index(root);
@@ -134,7 +138,11 @@ impl Interpreter {
                 if root.children.len() != 1 {
                     panic!("Invalid number of children for {:?}", root.node_type);
                 }
-                return self.evaluate_helper(&root.children[0]);
+                return self.evaluate_helper(&root.children[0], early_return);
+            }
+            NodeType::Return => {
+                *early_return = true;
+                return self.evaluate_helper(&root.children[0], early_return);
             }
             NodeType::Parameters => {
                 // just wrapper nodes
@@ -144,6 +152,7 @@ impl Interpreter {
                 // just wrapper nodes
                 panic!("Program node should not be evaluated");
             }
+
             _ => {
                 panic!("Invalid node type {:?}", root.node_type);
             }
@@ -170,12 +179,17 @@ impl Interpreter {
             }
 
             self.scope_manager.new_scope_with_values(arg_values);
+            let mut early_return = false;
             for child in function.children[1]
                 .children
                 .iter()
                 .take(function.children[1].children.len() - 1)
             {
-                self.evaluate_helper(child);
+                let result = self.evaluate_helper(child, &mut early_return);
+                if early_return {
+                    self.scope_manager.pop_scope();
+                    return result;
+                }
             }
 
             let result = self.evaluate_helper(
@@ -183,6 +197,7 @@ impl Interpreter {
                     .children
                     .last()
                     .expect("expected a child"),
+                &mut false,
             );
 
             self.scope_manager.pop_scope();
@@ -243,20 +258,20 @@ impl Interpreter {
     }
 
     fn handle_print(&mut self, root: &Node) -> Value {
-        let value = self.evaluate_helper(&root.children[0]);
+        let value = self.evaluate_helper(&root.children[0], &mut false);
         self.print_value(&value);
         return value;
     }
 
     fn handle_println(&mut self, root: &Node) -> Value {
-        let value = self.evaluate_helper(&root.children[0]);
+        let value = self.evaluate_helper(&root.children[0], &mut false);
         self.print_value(&value);
         println!();
         return value;
     }
 
     fn handle_head(&mut self, root: &Node) -> Value {
-        let list = self.evaluate_helper(&root.children[0]);
+        let list = self.evaluate_helper(&root.children[0], &mut false);
         if let Value::List(list) = list {
             return list[0].clone();
         } else {
@@ -265,7 +280,7 @@ impl Interpreter {
     }
 
     fn handle_tail(&mut self, root: &Node) -> Value {
-        let list = self.evaluate_helper(&root.children[0]);
+        let list = self.evaluate_helper(&root.children[0], &mut false);
         if let Value::List(list) = list {
             return Value::List(list[1..].to_vec().clone());
         } else if let Value::String(string) = list {
@@ -276,7 +291,7 @@ impl Interpreter {
     }
 
     fn handle_len(&mut self, root: &Node) -> Value {
-        let list = self.evaluate_helper(&root.children[0]);
+        let list = self.evaluate_helper(&root.children[0], &mut false);
         if let Value::List(list) = list {
             return Value::Number(list.len() as i32);
         } else if let Value::String(string) = list {
@@ -287,7 +302,7 @@ impl Interpreter {
     }
 
     fn handle_type(&mut self, root: &Node) -> Value {
-        let value = self.evaluate_helper(&root.children[0]);
+        let value = self.evaluate_helper(&root.children[0], &mut false);
         return match value {
             Value::Number(_) => Value::String("number".to_string()),
             Value::Float(_) => Value::String("float".to_string()),
@@ -300,7 +315,7 @@ impl Interpreter {
     }
 
     fn handle_is_bool(&mut self, root: &Node) -> Value {
-        let value = self.evaluate_helper(&root.children[0]);
+        let value = self.evaluate_helper(&root.children[0], &mut false);
         return match value {
             Value::Boolean(_) => Value::Boolean(true),
             _ => Value::Boolean(false),
@@ -308,7 +323,7 @@ impl Interpreter {
     }
 
     fn handle_is_number(&mut self, root: &Node) -> Value {
-        let value = self.evaluate_helper(&root.children[0]);
+        let value = self.evaluate_helper(&root.children[0], &mut false);
         return match value {
             Value::Number(_) => Value::Boolean(true),
             _ => Value::Boolean(false),
@@ -316,7 +331,7 @@ impl Interpreter {
     }
 
     fn handle_is_string(&mut self, root: &Node) -> Value {
-        let value = self.evaluate_helper(&root.children[0]);
+        let value = self.evaluate_helper(&root.children[0], &mut false);
         return match value {
             Value::String(_) => Value::Boolean(true),
             _ => Value::Boolean(false),
@@ -324,7 +339,7 @@ impl Interpreter {
     }
 
     fn handle_is_list(&mut self, root: &Node) -> Value {
-        let value = self.evaluate_helper(&root.children[0]);
+        let value = self.evaluate_helper(&root.children[0], &mut false);
         return match value {
             Value::List(_) => Value::Boolean(true),
             _ => Value::Boolean(false),
@@ -335,7 +350,7 @@ impl Interpreter {
         let args: Vec<Value> = root
             .children
             .iter()
-            .map(|child| self.evaluate_helper(child))
+            .map(|child| self.evaluate_helper(child, &mut false))
             .collect();
         let val = &args[0];
         if let Value::Function(_) = val {
@@ -358,7 +373,7 @@ impl Interpreter {
             .value
             .as_ref()
             .expect("expected an identifier");
-        let value = self.evaluate_helper(&root.children[1]);
+        let value = self.evaluate_helper(&root.children[1], &mut false);
         self.scope_manager
             .insert_identifier(identifier.clone(), value.clone());
         return value;
@@ -378,36 +393,33 @@ impl Interpreter {
         return Value::Function(root.children[1].clone());
     }
 
-    fn handle_block(&mut self, root: &Node) -> Value {
+    fn handle_block(&mut self, root: &Node, early_return: &mut bool) -> Value {
         for child in root.children.iter().take(root.children.len() - 1) {
-            self.evaluate_helper(child);
+            let result = self.evaluate_helper(child, early_return);
+            if *early_return {
+                return result;
+            }
         }
-        return self.evaluate_helper(root.children.last().expect("expected a child"));
+        return self.evaluate_helper(
+            root.children.last().expect("expected a child"),
+            early_return,
+        );
     }
 
     fn handle_list(&mut self, root: &Node) -> Value {
         let values: Vec<Value> = root
             .children
             .iter()
-            .map(|child| self.evaluate_helper(child))
+            .map(|child| self.evaluate_helper(child, &mut false))
             .collect();
 
         return Value::List(values);
     }
 
     fn handle_index(&mut self, root: &Node) -> Value {
-        // let indexable_name = root.children[0]
-        //     .value
-        //     .as_ref()
-        //     .expect("expected an identifier for value");
-        // let index = self.evaluate_helper(&root.children[1]);
+        let indexable = self.evaluate_helper(&root.children[0], &mut false);
 
-        // let indexable = self.scope_manager.get_identifier(indexable_name);
-
-        let indexable = self.evaluate_helper(&root.children[0]);
-        println!("{:?}", indexable);
-
-        let index = self.evaluate_helper(&root.children[1]);
+        let index = self.evaluate_helper(&root.children[1], &mut false);
         let index = if let Value::Number(index) = index {
             index
         } else {
@@ -424,8 +436,8 @@ impl Interpreter {
         }
     }
 
-    fn handle_if(&mut self, root: &Node) -> Value {
-        let condition = self.evaluate_helper(&root.children[0]);
+    fn handle_if(&mut self, root: &Node, early_return: &mut bool) -> Value {
+        let condition = self.evaluate_helper(&root.children[0], &mut false);
         let condition = match condition {
             Value::Boolean(val) => val,
             _ => panic!("Expected a boolean"),
@@ -433,13 +445,14 @@ impl Interpreter {
 
         if condition {
             if root.children.len() >= 2 {
-                return self.evaluate_helper(&root.children[1]);
+                let result = self.evaluate_helper(&root.children[1], early_return);
+                return result;
             } else {
                 return Value::Null;
             }
         } else {
             if root.children.len() >= 3 {
-                return self.evaluate_helper(&root.children[2]);
+                return self.evaluate_helper(&root.children[2], &mut false);
             } else {
                 return Value::Null;
             }
@@ -450,7 +463,7 @@ impl Interpreter {
         let values: Vec<Value> = root
             .children
             .iter()
-            .map(|child| self.evaluate_helper(child))
+            .map(|child| self.evaluate_helper(child, &mut false))
             .collect();
 
         match root.value.as_ref().unwrap().as_str() {
@@ -624,7 +637,7 @@ impl Interpreter {
         let values: Vec<Value> = root.children[0]
             .children
             .iter()
-            .map(|child| self.evaluate_helper(child))
+            .map(|child| self.evaluate_helper(child, &mut false))
             .collect();
 
         let function = self.scope_manager.get_identifier(val).clone();

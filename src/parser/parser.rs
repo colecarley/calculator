@@ -151,7 +151,7 @@ impl Parser {
                     return;
                 }
                 "true" | "false" | "is_bool" | "is_number" | "is_string" | "is_list" | "type"
-                | "head" | "tail" | "len" | "input" | "is_function" => {}
+                | "head" | "tail" | "len" | "input" | "is_function" | "return" => {}
                 _ => {
                     // panic!("Invalid keyword");
                     self.error(self.peek().clone(), "Invalid keyword");
@@ -363,6 +363,23 @@ impl Parser {
                     };
                     root.children.push(node);
                     self.next();
+                }
+                "return" => {
+                    let mut ret = Node {
+                        value: None,
+                        node_type: NodeType::Return,
+                        children: Vec::new(),
+                    };
+                    self.next();
+
+                    let mut expression = Node {
+                        value: None,
+                        node_type: NodeType::Expression,
+                        children: Vec::new(),
+                    };
+                    self.expression(&mut expression);
+                    ret.children.push(expression);
+                    root.children.push(ret);
                 }
                 "is_bool" | "is_number" | "is_string" | "is_list" | "type" | "head" | "tail"
                 | "len" | "input" | "is_function" => self.function_call(root),

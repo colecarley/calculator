@@ -55,6 +55,7 @@ impl Lexer<'_> {
                 "is_list",
                 "is_function",
                 "input",
+                "return",
             ],
             operators: vec![
                 "+", "-", "*", "/", "%", "=", "==", ">=", "<=", ">", "<", "!=",

@@ -17,6 +17,7 @@ pub enum NodeType {
     Index,
     List,
     Block,
+    Return,
 }
 
 #[derive(Debug, Clone, PartialEq)]

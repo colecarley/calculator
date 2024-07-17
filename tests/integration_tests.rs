@@ -165,6 +165,32 @@ fn test_function_declaration_with_nested_function() {
 }
 
 #[test]
+fn test_function_with_early_return() {
+    let input = "funk add(x, y) { if (x == 6) { return 6; } x + y; } add(6, 6);".to_string();
+    assert_eq!(evaluate(input), Value::Number(6));
+}
+
+#[test]
+
+fn test_function_with_early_return_in_nested_function() {
+    let input = "funk add(x, y) { funk add2(x, y) { if (x == 6) { return 6; } x + y; } add2(x, y); } add(6, 6);".to_string();
+    assert_eq!(evaluate(input), Value::Number(6));
+}
+
+#[test]
+fn test_function_with_return() {
+    let input = "funk add(x, y) { return x + y; } add(6, 6);".to_string();
+    assert_eq!(evaluate(input), Value::Number(12));
+}
+
+#[test]
+fn test_function_with_return_in_nested_function() {
+    let input =
+        "funk add(x, y) { funk add2(x, y) { return x + y; } add2(x, y); } add(6, 6);".to_string();
+    assert_eq!(evaluate(input), Value::Number(12));
+}
+
+#[test]
 fn test_if_statement() {
     let input = "if (6 == 6) { 6; } else { 12; }".to_string();
     assert_eq!(evaluate(input), Value::Number(6));
