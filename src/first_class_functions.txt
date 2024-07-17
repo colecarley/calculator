@@ -1,2 +1,7 @@
 
 
+println(foobar())
+
+funk foobar() {
+    3
+}

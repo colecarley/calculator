@@ -71,6 +71,8 @@ impl Interpreter {
     }
 
     pub fn evaluate(&mut self, root: Node) -> Value {
+        self.store_functions(&root);
+
         let mut result = Value::Number(0);
         let mut early_return = false;
         for child in &root.children {
@@ -642,5 +644,23 @@ impl Interpreter {
 
         let function = self.scope_manager.get_identifier(val).clone();
         return self.evaluate_function(&function, values);
+    }
+
+    fn store_functions(&mut self, root: &Node) -> Value {
+        for child in &root.children {
+            if child.node_type == NodeType::Declaration {
+                let identifier = child.children[0]
+                    .value
+                    .as_ref()
+                    .expect("expected an identifier");
+                self.scope_manager.insert_identifier(
+                    identifier.clone(),
+                    Value::Function(child.children[1].clone()),
+                );
+            } else {
+                self.store_functions(child);
+            }
+        }
+        return Value::Null;
     }
 }
