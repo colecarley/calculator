@@ -139,6 +139,12 @@ fn test_assignment_with_list() {
 }
 
 #[test]
+fn test_assignment_with_empty_list() {
+    let input = "let x = []; x;".to_string();
+    assert_eq!(evaluate(input), Value::List(vec![]));
+}
+
+#[test]
 fn test_function_declaration() {
     let input = "funk add(x, y) { x + y; } add(6, 6);".to_string();
     assert_eq!(evaluate(input), Value::Number(12));

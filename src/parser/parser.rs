@@ -290,15 +290,34 @@ impl Parser {
                 if self.peek().token_type == TokenType::LeftParen {
                     self.prev();
                     self.function_call(root);
+                    if !self.is_eof() {
+                        if self.peek().token_type == TokenType::LeftBracket {
+                            let children = root.children.clone();
+                            root.children.clear();
+
+                            let mut node = Node {
+                                value: None,
+                                node_type: NodeType::Index,
+                                children,
+                            };
+                            self.index(&mut node);
+                            root.children.push(node);
+                        }
+                    }
                     return;
                 }
                 if self.peek().token_type == TokenType::LeftBracket {
+                    self.prev();
                     let mut node = Node {
                         value: None,
                         node_type: NodeType::Index,
-                        children: Vec::new(),
+                        children: vec![Node {
+                            value: Some(self.peek().value.clone()),
+                            node_type: NodeType::Identifier,
+                            children: Vec::new(),
+                        }],
                     };
-                    self.prev();
+                    self.next();
                     self.index(&mut node);
                     root.children.push(node);
                     return;
@@ -657,20 +676,6 @@ impl Parser {
     }
 
     fn index(&mut self, root: &mut Node) {
-        if self.peek().token_type != TokenType::Identifier {
-            self.error(self.peek().clone(), "Expected identifier");
-        }
-
-        let identifier = Node {
-            value: Some(self.peek().value.clone()),
-            node_type: NodeType::Identifier,
-            children: Vec::new(),
-        };
-
-        root.children.push(identifier);
-
-        self.next();
-
         if self.peek().token_type != TokenType::LeftBracket {
             self.error(self.peek().clone(), "Expected left bracket");
         }

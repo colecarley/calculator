@@ -396,10 +396,17 @@ impl Interpreter {
     }
 
     fn handle_index(&mut self, root: &Node) -> Value {
-        let indexable_name = root.children[0]
-            .value
-            .as_ref()
-            .expect("expected an identifier for value");
+        // let indexable_name = root.children[0]
+        //     .value
+        //     .as_ref()
+        //     .expect("expected an identifier for value");
+        // let index = self.evaluate_helper(&root.children[1]);
+
+        // let indexable = self.scope_manager.get_identifier(indexable_name);
+
+        let indexable = self.evaluate_helper(&root.children[0]);
+        println!("{:?}", indexable);
+
         let index = self.evaluate_helper(&root.children[1]);
         let index = if let Value::Number(index) = index {
             index
@@ -407,7 +414,6 @@ impl Interpreter {
             panic!("Expected a number");
         };
 
-        let indexable = self.scope_manager.get_identifier(indexable_name);
         if let Value::String(string) = indexable {
             return Value::String((string.as_bytes()[index as usize].clone() as char).to_string());
         }
