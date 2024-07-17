@@ -96,7 +96,8 @@ impl Interpreter {
                         "is_number" => return self.handle_is_number(root),
                         "is_string" => return self.handle_is_string(root),
                         "is_list" => return self.handle_is_list(root),
-                        "is_function" => return self.handle_is_function(val),
+                        "is_function" => return self.handle_is_function(root), //TODO: fix this
+
                         "input" => return self.handle_input(),
                         _ => {
                             panic!("Function not found");
@@ -330,18 +331,18 @@ impl Interpreter {
         };
     }
 
-    fn handle_is_function(&mut self, val: &str) -> Value {
-        return match self.scope_manager.contains_identifier(val) {
-            true => {
-                let val = self.scope_manager.get_identifier(val);
-                if let Value::Function(_) = val {
-                    Value::Boolean(true)
-                } else {
-                    Value::Boolean(false)
-                }
-            }
-            false => Value::Boolean(false),
-        };
+    fn handle_is_function(&mut self, root: &Node) -> Value {
+        let args: Vec<Value> = root
+            .children
+            .iter()
+            .map(|child| self.evaluate_helper(child))
+            .collect();
+        let val = &args[0];
+        if let Value::Function(_) = val {
+            Value::Boolean(true)
+        } else {
+            Value::Boolean(false)
+        }
     }
 
     fn handle_input(&mut self) -> Value {

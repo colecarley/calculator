@@ -25,9 +25,13 @@ fn main() {
     let mut lexer = Lexer::new(input);
     let tokens = lexer.lex();
 
+    for token in &tokens {
+        println!("{:?}", token);
+    }
+
     let mut parser = Parser::new(tokens);
     let root = parser.parse();
-    // parser.print_tree(&root, 0);
+    parser.print_tree(&root, 0);
 
     interpreter.evaluate(root);
 }

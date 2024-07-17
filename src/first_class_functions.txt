@@ -1,8 +1,6 @@
 
-funk one() {
-    1
+funk foobar() {
+
 }
 
-let x = [1,2,3]
-
-x[one()]
+println(is_function(foobar))
