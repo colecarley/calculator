@@ -9,7 +9,7 @@ Statement -> Let
     | Expr
     | FunctionCall
 
-Let -> Keyword Identifier '=' Expr
+Let -> Keyword Keyword Identifier '=' Expr
 
 Reassign -> Identifier '=' Expr
 
@@ -21,9 +21,9 @@ Else -> Keyword '{' Expr '}'
 
 Funk -> Keyword Identifier '(' Params ')' '{' Expr '}'
 
-Params -> Identifier ParamsTail
+Params -> Keyword Identifier ParamsTail
     | ε
-ParamsTail -> ',' Identifier ParamsTail
+ParamsTail -> ',' Keyword Identifier ParamsTail
     | ε
 
 Args -> Expr ArgsTail
@@ -227,7 +227,6 @@ impl Parser {
                     self.term(&mut term);
                     operator.children.push(term);
                     self.expression_tail(root, &mut operator);
-                    // root.children.push(operator);
                 }
                 "==" | "!=" | ">" | ">=" | "<" | "<=" => {
                     let mut operator = Node {
@@ -386,6 +385,11 @@ impl Parser {
                     };
                     self.next();
 
+                    if self.peek().token_type == TokenType::RightBrace {
+                        root.children.push(ret);
+                        return;
+                    }
+
                     let mut expression = Node {
                         value: None,
                         node_type: NodeType::Expression,
@@ -431,6 +435,30 @@ impl Parser {
             },
             children: Vec::new(),
         };
+
+        if !reassign {
+            if self.peek().token_type != TokenType::Keyword {
+                self.error(self.peek().clone(), "Expected type keyword");
+            }
+
+            if self.peek().value != "bool"
+                && self.peek().value != "int"
+                && self.peek().value != "str"
+                && self.peek().value != "list"
+                && self.peek().value != "function"
+            {
+                self.error(self.peek().clone(), "Expected type keyword");
+            }
+
+            let node = Node {
+                value: Some(self.peek().value.clone()),
+                node_type: NodeType::TypeAnnotation,
+                children: Vec::new(),
+            };
+
+            operation.children.push(node);
+            self.next();
+        }
 
         if self.peek().token_type != TokenType::Identifier {
             self.error(self.peek().clone(), "Expected identifier");
@@ -650,6 +678,29 @@ impl Parser {
     }
 
     fn parameters(&mut self, root: &mut Node) {
+        if self.peek().token_type != TokenType::Keyword {
+            self.error(self.peek().clone(), "Expected type keyword");
+        }
+
+        if self.peek().value != "bool"
+            && self.peek().value != "int"
+            && self.peek().value != "str"
+            && self.peek().value != "list"
+            && self.peek().value != "function"
+        {
+            self.error(self.peek().clone(), "Expected type keyword");
+        }
+
+        let node = Node {
+            value: Some(self.peek().value.clone()),
+            node_type: NodeType::TypeAnnotation,
+            children: Vec::new(),
+        };
+
+        root.children.push(node);
+
+        self.next();
+
         if self.peek().token_type != TokenType::Identifier {
             self.error(self.peek().clone(), "Expected identifier");
         }

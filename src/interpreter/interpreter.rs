@@ -25,6 +25,41 @@ impl ScopeManager {
     fn reassign_identifier(&mut self, identifier: String, value: Value) {
         for scope in self.scopes.iter_mut().rev() {
             if scope.contains_key(&identifier) {
+                let last_value = scope.get(&identifier).unwrap().clone();
+
+                if let Value::Boolean(_) = last_value {
+                    if let Value::Boolean(_) = value {
+                        scope.insert(identifier, value);
+                        return;
+                    } else {
+                        panic!("Type mismatch");
+                    }
+                }
+                if let Value::Number(_) = last_value {
+                    if let Value::Number(_) = value {
+                        scope.insert(identifier, value);
+                        return;
+                    } else {
+                        panic!("Type mismatch");
+                    }
+                }
+                if let Value::String(_) = last_value {
+                    if let Value::String(_) = value {
+                        scope.insert(identifier, value);
+                        return;
+                    } else {
+                        panic!("Type mismatch");
+                    }
+                }
+                if let Value::List(_) = last_value {
+                    if let Value::List(_) = value {
+                        scope.insert(identifier, value);
+                        return;
+                    } else {
+                        panic!("Type mismatch");
+                    }
+                }
+
                 scope.insert(identifier, value);
                 return;
             }
@@ -155,6 +190,9 @@ impl Interpreter {
             }
             NodeType::Return => {
                 *early_return = true;
+                if root.children.len() == 0 {
+                    return Value::Null;
+                }
                 return self.evaluate_helper(&root.children[0], early_return);
             }
             NodeType::Parameters => {
@@ -177,6 +215,21 @@ impl Interpreter {
             let param_names: Vec<String> = function.children[0]
                 .children
                 .iter()
+                .skip(1)
+                .step_by(2)
+                .map(|child| {
+                    child
+                        .value
+                        .as_ref()
+                        .expect("expected an identifier for value")
+                        .clone()
+                })
+                .collect();
+
+            let param_type_annotations: Vec<String> = function.children[0]
+                .children
+                .iter()
+                .step_by(2)
                 .map(|child| {
                     child
                         .value
@@ -188,6 +241,31 @@ impl Interpreter {
 
             let mut arg_values = HashMap::new();
             for (i, param_name) in param_names.iter().enumerate() {
+                let value = parameter_values[i].clone();
+                let type_annotation = param_type_annotations[i].clone();
+                if let Value::Boolean(_) = value {
+                    if type_annotation != "bool" {
+                        panic!("Type mismatch");
+                    }
+                } else if let Value::Number(_) = value {
+                    if type_annotation != "int" {
+                        panic!("Type mismatch");
+                    }
+                } else if let Value::String(_) = value {
+                    if type_annotation != "str" {
+                        panic!("Type mismatch");
+                    }
+                } else if let Value::List(_) = value {
+                    if type_annotation != "list" {
+                        panic!("Type mismatch");
+                    }
+                } else if let Value::Function(_) = value {
+                    if type_annotation != "function" {
+                        panic!("Type mismatch");
+                    }
+                } else {
+                    panic!("Invalid type");
+                }
                 arg_values.insert(param_name.clone(), parameter_values[i].clone());
             }
 
@@ -382,11 +460,43 @@ impl Interpreter {
     }
 
     fn handle_assignment(&mut self, root: &Node) -> Value {
-        let identifier = root.children[0]
+        let type_annotation = root.children[0]
+            .value
+            .as_ref()
+            .expect("expected a type annotation");
+        let identifier = root.children[1]
             .value
             .as_ref()
             .expect("expected an identifier");
-        let value = self.evaluate_helper(&root.children[1], &mut false);
+        let value = self.evaluate_helper(&root.children[2], &mut false);
+
+        if self.scope_manager.contains_identifier(identifier) {
+            panic!("Identifier {} already exists", identifier);
+        }
+
+        if let Value::Boolean(_) = value {
+            if type_annotation != "bool" {
+                panic!("Type mismatch");
+            }
+        } else if let Value::Number(_) = value {
+            if type_annotation != "int" {
+                panic!("Type mismatch");
+            }
+        } else if let Value::String(_) = value {
+            if type_annotation != "str" {
+                panic!("Type mismatch");
+            }
+        } else if let Value::List(_) = value {
+            if type_annotation != "list" {
+                panic!("Type mismatch");
+            }
+        } else if let Value::Function(_) = value {
+            if type_annotation != "function" {
+                panic!("Type mismatch");
+            }
+        } else {
+            panic!("Invalid type");
+        }
         self.scope_manager
             .insert_identifier(identifier.clone(), value.clone());
         return value;
@@ -398,6 +508,7 @@ impl Interpreter {
             .as_ref()
             .expect("expected an identifier");
         let value = self.evaluate_helper(&root.children[1], &mut false);
+
         self.scope_manager
             .reassign_identifier(identifier.clone(), value.clone());
         return value;

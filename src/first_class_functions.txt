@@ -1,5 +1,43 @@
+let int i = 3;
 
-let x = 3
+i = 4;
 
-x = 4
+let str s = "cole";
+
+let list l = [];
+
+funk foobar(str s) {
+    print("hello ");
+    println(s);
+}
+
+foobar(s);
+
+
+funk printEach(list l) {
+    if len(l) == 0 {
+        return; 
+    } 
+    println(head(l));
+    printEach(tail(l));
+}
+
+println(printEach(l));
+
+let int x = 3;
+let int y = 4;
+
+println(x + y);
+
+
+let int foo = 4;
+
+funk reassign() {
+    foo = 5;
+}
+
+
+reassign();
+
+println(foo);
 

@@ -13,6 +13,7 @@ pub enum NodeType {
     If,
     Function,
     Args,
+    TypeAnnotation,
     Parameters,
     Program,
     Index,
