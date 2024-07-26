@@ -41,3 +41,13 @@ reassign();
 
 println(foo);
 
+
+struct hi_there {
+    str type;
+    int number;
+}
+
+let hi_there foobar = {
+    type: foobar
+    number: 4
+}

@@ -8,13 +8,19 @@ use crate::{
 
 struct ScopeManager {
     scopes: Vec<HashMap<String, Value>>,
+    structs: HashMap<String, HashMap<String, Value>>,
     num: i32,
 }
 
 impl ScopeManager {
     fn new() -> ScopeManager {
         let scopes = vec![HashMap::new()];
-        ScopeManager { scopes, num: 1 }
+        let structs = HashMap::new();
+        ScopeManager {
+            scopes,
+            num: 1,
+            structs,
+        }
     }
 
     fn insert_identifier(&mut self, identifier: String, value: Value) {
@@ -195,6 +201,9 @@ impl Interpreter {
                 }
                 return self.evaluate_helper(&root.children[0], early_return);
             }
+            NodeType::Struct => {
+                return self.handle_struct_declaration(root);
+            }
             NodeType::Parameters => {
                 // just wrapper nodes
                 panic!("Parameters node should not be evaluated");
@@ -203,7 +212,6 @@ impl Interpreter {
                 // just wrapper nodes
                 panic!("Program node should not be evaluated");
             }
-
             _ => {
                 panic!("Invalid node type {:?}", root.node_type);
             }
@@ -310,6 +318,8 @@ impl Interpreter {
                 return Value::Boolean(true);
             } else if value == "false" {
                 return Value::Boolean(false);
+            } else if value == "null" {
+                return Value::Null;
             } else {
                 return Value::Number(value.parse().unwrap());
             }
@@ -402,6 +412,7 @@ impl Interpreter {
             Value::List(_) => Value::String("list".to_string()),
             Value::Function(_) => Value::String("function".to_string()),
             Value::Null => Value::String("null".to_string()),
+            Value::Struct(_) => Value::String("struct".to_string()),
         };
     }
 
@@ -777,6 +788,10 @@ impl Interpreter {
 
         let function = self.scope_manager.get_identifier(val).clone();
         return self.evaluate_function(&function, values);
+    }
+
+    fn handle_struct_declaration(&mut self, root: &Node) -> Value {
+        return Value::Null;
     }
 
     fn store_functions(&mut self, root: &Node) -> Value {

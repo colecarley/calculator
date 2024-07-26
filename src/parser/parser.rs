@@ -107,13 +107,21 @@ impl Parser {
             children: Vec::new(),
         };
         while !self.is_eof() {
-            let mut expression = Node {
-                value: None,
-                node_type: NodeType::Expression,
-                children: Vec::new(),
-            };
-            self.expression(&mut expression);
-            root.children.push(expression);
+            if !self.is_eof() {
+                if self.peek().value == "struct" {
+                    self.next();
+                    self.struct_declaration(&mut root);
+                }
+            } else {
+                let mut expression = Node {
+                    value: None,
+                    node_type: NodeType::Expression,
+                    children: Vec::new(),
+                };
+                self.expression(&mut expression);
+
+                root.children.push(expression);
+            }
         }
         return root;
     }
@@ -148,6 +156,7 @@ impl Parser {
                     self.function_declaration(root);
                     return;
                 }
+
                 "print" | "println" => {
                     self.function_call(root);
                     return;
@@ -781,6 +790,96 @@ impl Parser {
 
         self.next();
         self.args(root);
+    }
+
+    fn struct_declaration(&mut self, root: &mut Node) {
+        let mut operation = Node {
+            value: None,
+            node_type: NodeType::Declaration,
+            children: Vec::new(),
+        };
+
+        if self.peek().token_type != TokenType::Identifier {
+            self.error(self.peek().clone(), "Expected identifier");
+        }
+
+        let identifier = Node {
+            value: Some(self.peek().value.clone()),
+            node_type: NodeType::Identifier,
+            children: Vec::new(),
+        };
+
+        operation.children.push(identifier);
+        self.next();
+
+        if self.peek().token_type != TokenType::LeftBrace {
+            self.error(self.peek().clone(), "Expected left brace");
+        }
+
+        self.next();
+
+        let mut struct_body = Node {
+            value: None,
+            node_type: NodeType::Struct,
+            children: Vec::new(),
+        };
+
+        self.struct_body(&mut struct_body);
+
+        if self.peek().token_type != TokenType::RightBrace {
+            self.error(self.peek().clone(), "Expected right brace");
+        }
+    }
+
+    fn struct_body(&mut self, root: &mut Node) {
+        let mut struct_body = Node {
+            value: None,
+            node_type: NodeType::Struct,
+            children: Vec::new(),
+        };
+
+        self.struct_body_tail(&mut struct_body);
+    }
+
+    fn struct_body_tail(&mut self, root: &mut Node) {
+        if self.peek().token_type == TokenType::Keyword {
+            return;
+        }
+
+        if self.peek().value != "bool"
+            && self.peek().value != "int"
+            && self.peek().value != "str"
+            && self.peek().value != "list"
+            && self.peek().value != "function"
+        {
+            self.error(self.peek().clone(), "Expected type keyword");
+        }
+
+        let node = Node {
+            value: Some(self.peek().value.clone()),
+            node_type: NodeType::TypeAnnotation,
+            children: Vec::new(),
+        };
+
+        root.children.push(node);
+
+        self.next();
+
+        if self.peek().token_type != TokenType::Identifier {
+            self.error(self.peek().clone(), "Expected identifier");
+        }
+
+        let identifier = Node {
+            value: Some(self.peek().value.clone()),
+            node_type: NodeType::Identifier,
+            children: Vec::new(),
+        };
+
+        root.children.push(identifier);
+
+        self.next();
+
+        self.struct_body_tail(root);
     }
 
     fn index(&mut self, root: &mut Node) {

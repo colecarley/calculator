@@ -61,6 +61,7 @@ impl Lexer<'_> {
                 "str",
                 "list",
                 "function",
+                "struct"
             ],
             operators: vec![
                 "+", "-", "*", "/", "%", "=", "==", ">=", "<=", ">", "<", "!=",
