@@ -183,6 +183,9 @@ impl Interpreter {
             NodeType::If => {
                 return self.handle_if(root, early_return);
             }
+            NodeType::While => {
+                return self.handle_while(root, early_return);
+            }
             NodeType::Index => {
                 return self.handle_index(root);
             }
@@ -637,6 +640,39 @@ impl Interpreter {
         } else {
             panic!("Expected a string or a list");
         }
+    }
+
+    fn handle_while(&mut self, root: &Node, early_return: &mut bool) -> Value {
+        let condition_val = self.evaluate_helper(&root.children[0], &mut false);
+        let condition = match condition_val {
+            Value::Boolean(val) => val,
+            _ => panic!("Expected a boolean"),
+        };
+
+        let mut result = Value::Null;
+        let block = &root.children[1];
+        if condition {
+            loop {
+                for child in block.children.iter() {
+                    result = self.evaluate_helper(child, early_return);
+                    if *early_return {
+                        return result;
+                    }
+                }
+
+                let condition_val = self.evaluate_helper(&root.children[0], &mut false);
+                let condition = match condition_val {
+                    Value::Boolean(val) => val,
+                    _ => panic!("Expected a boolean"),
+                };
+
+                if !condition {
+                    break;
+                }
+            }
+        }
+
+        return result;
     }
 
     fn handle_if(&mut self, root: &Node, early_return: &mut bool) -> Value {

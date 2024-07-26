@@ -148,6 +148,11 @@ impl Parser {
                     self.if_statement(root);
                     return;
                 }
+                "while" => {
+                    self.next();
+                    self.while_statement(root);
+                    return;
+                }
                 "funk" => {
                     self.next();
                     self.function_declaration(root);
@@ -640,6 +645,47 @@ impl Parser {
         root.children.push(value);
 
         self.map_tail(root);
+    }
+
+    fn while_statement(&mut self, root: &mut Node) {
+        let mut while_statement = Node {
+            value: Some("while".to_string()),
+            node_type: NodeType::While,
+            children: Vec::new(),
+        };
+
+        let mut expression = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut expression);
+
+        if self.peek().token_type != TokenType::LeftBrace {
+            self.error(self.peek().clone(), "Expected left brace");
+        }
+
+        self.next();
+
+        let mut block = Node {
+            value: None,
+            node_type: NodeType::Block,
+            children: Vec::new(),
+        };
+
+        self.block(&mut block);
+
+        if self.peek().token_type != TokenType::RightBrace {
+            self.error(self.peek().clone(), "Expected right brace");
+        }
+
+        self.next();
+
+        while_statement.children.push(expression);
+        while_statement.children.push(block);
+
+        root.children.push(while_statement);
     }
 
     fn if_statement(&mut self, root: &mut Node) {

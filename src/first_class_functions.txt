@@ -53,4 +53,19 @@ println(my_map.bar);
 
 println(my_map);
 
+let int num = 0;
 
+while num < 3 {
+    num = num + 1;
+    println(num);
+}
+
+num = 0;
+funk in_loop(int x) {
+    return x * 2;
+}
+
+while num < 10 {
+    num = num + 1;
+    println(in_loop(num));
+}

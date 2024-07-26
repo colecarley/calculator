@@ -11,6 +11,7 @@ pub enum NodeType {
     FunctionCall,
     Literal,
     If,
+    While,
     Function,
     Args,
     TypeAnnotation,
