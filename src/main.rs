@@ -27,6 +27,7 @@ fn main() {
 
     let mut parser = Parser::new(tokens);
     let ast = parser.parse();
+    // parser.print_tree(&ast, 0);
 
     interpreter.evaluate(ast);
 }

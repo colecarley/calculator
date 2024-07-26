@@ -41,3 +41,16 @@ reassign();
 
 println(foo);
 
+
+let map my_map = {
+    foo: "foo",
+    bar: "bar"
+};
+
+
+println(my_map.foo);
+println(my_map.bar);
+
+println(my_map);
+
+

@@ -61,9 +61,10 @@ impl Lexer<'_> {
                 "str",
                 "list",
                 "function",
+                "map",
             ],
             operators: vec![
-                "+", "-", "*", "/", "%", "=", "==", ">=", "<=", ">", "<", "!=",
+                "+", "-", "*", "/", "%", "=", "==", ">=", "<=", ">", "<", "!=", ":", ".",
             ],
             current_line: 0,
         }
@@ -72,7 +73,7 @@ impl Lexer<'_> {
     pub fn lex(&mut self) -> Vec<Token> {
         use regex::Regex;
         let number = Regex::new(r"\d").unwrap();
-        let operator = Regex::new(r"[+\-*/=><!%]").unwrap();
+        let operator = Regex::new(r"[+\-*/=><!%:.]").unwrap();
         let whitespace = Regex::new(r"\s").unwrap();
         let left_paren = Regex::new(r"\(").unwrap();
         let right_paren = Regex::new(r"\)").unwrap();

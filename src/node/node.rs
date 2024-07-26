@@ -16,8 +16,10 @@ pub enum NodeType {
     TypeAnnotation,
     Parameters,
     Program,
+    MapIndex,
     Index,
     List,
+    Map,
     Block,
     Return,
 }

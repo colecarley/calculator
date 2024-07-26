@@ -51,12 +51,17 @@ Factor -> '(' Expr ')'
         | Boolean
         | Index
         | List
+        | Map
 
 List -> '[' ListTail
 ListTail -> Expr ListTailTail
 ListTailTail -> ',' Expr ListTailTail
             | ']'
 
+Map -> '{' MapTail
+MapTail -> Expr ':' Expr MapTailTail
+MapTailTail -> ',' Expr ':' Expr MapTailTail
+            | '}'
 
 */
 
@@ -357,6 +362,24 @@ impl Parser {
                     root.children.push(node);
                     return;
                 }
+                if self.peek().token_type == TokenType::Operator {
+                    if self.peek().value == "." {
+                        self.prev();
+                        let mut node = Node {
+                            value: None,
+                            node_type: NodeType::MapIndex,
+                            children: vec![Node {
+                                value: Some(self.peek().value.clone()),
+                                node_type: NodeType::Identifier,
+                                children: Vec::new(),
+                            }],
+                        };
+                        self.next();
+                        self.map_index(&mut node);
+                        root.children.push(node);
+                        return;
+                    }
+                }
             }
             self.prev();
             let node = Node {
@@ -420,6 +443,15 @@ impl Parser {
             self.next();
             self.list(&mut list);
             root.children.push(list);
+        } else if self.peek().token_type == TokenType::LeftBrace {
+            let mut map = Node {
+                value: None,
+                node_type: NodeType::Map,
+                children: Vec::new(),
+            };
+            self.next();
+            self.map(&mut map);
+            root.children.push(map);
         } else {
             self.error(self.peek().clone(), "Invalid factor");
         }
@@ -446,6 +478,7 @@ impl Parser {
                 && self.peek().value != "str"
                 && self.peek().value != "list"
                 && self.peek().value != "function"
+                && self.peek().value != "map"
             {
                 self.error(self.peek().clone(), "Expected type keyword");
             }
@@ -527,6 +560,86 @@ impl Parser {
         self.expression(&mut expression);
         root.children.push(expression);
         self.list_tail(root);
+    }
+
+    fn map(&mut self, root: &mut Node) {
+        if self.peek().token_type == TokenType::RightBrace {
+            self.next();
+            return;
+        }
+
+        let key = Node {
+            value: format!("\"{}\"", self.peek().value.clone()).into(),
+            node_type: NodeType::Literal,
+            children: Vec::new(),
+        };
+
+        root.children.push(key);
+        self.next();
+
+        if self.peek().token_type != TokenType::Operator && self.peek().value != ":" {
+            self.error(self.peek().clone(), "Expected colon");
+        }
+
+        self.next();
+
+        let mut value = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut value);
+
+        root.children.push(value);
+
+        self.map_tail(root);
+    }
+
+    fn map_tail(&mut self, root: &mut Node) {
+        if self.peek().token_type == TokenType::RightBrace {
+            self.next();
+            return;
+        }
+
+        if self.peek().token_type != TokenType::Comma {
+            self.error(self.peek().clone(), "Expected comma");
+        }
+
+        self.next();
+
+        if self.peek().token_type == TokenType::RightBrace {
+            self.next();
+            return;
+        }
+
+        let key = Node {
+            value: format!("\"{}\"", self.peek().value.clone()).into(),
+            node_type: NodeType::Literal,
+            children: Vec::new(),
+        };
+
+        root.children.push(key);
+
+        self.next();
+
+        if self.peek().token_type != TokenType::Operator && self.peek().value != ":" {
+            self.error(self.peek().clone(), "Expected colon");
+        }
+
+        self.next();
+
+        let mut value = Node {
+            value: None,
+            node_type: NodeType::Expression,
+            children: Vec::new(),
+        };
+
+        self.expression(&mut value);
+
+        root.children.push(value);
+
+        self.map_tail(root);
     }
 
     fn if_statement(&mut self, root: &mut Node) {
@@ -687,6 +800,7 @@ impl Parser {
             && self.peek().value != "str"
             && self.peek().value != "list"
             && self.peek().value != "function"
+            && self.peek().value != "map"
         {
             self.error(self.peek().clone(), "Expected type keyword");
         }
@@ -781,6 +895,32 @@ impl Parser {
 
         self.next();
         self.args(root);
+    }
+
+    fn map_index(&mut self, root: &mut Node) {
+        if self.peek().token_type != TokenType::Operator {
+            self.error(self.peek().clone(), "Expected dot operator");
+        }
+
+        if self.peek().value != "." {
+            self.error(self.peek().clone(), "Expected dot operator");
+        }
+
+        self.next();
+
+        if self.peek().token_type != TokenType::Identifier {
+            self.error(self.peek().clone(), "Expected identifier");
+        }
+
+        let node = Node {
+            value: format!("\"{}\"", self.peek().value.clone()).into(),
+            node_type: NodeType::Literal,
+            children: Vec::new(),
+        };
+
+        root.children.push(node);
+
+        self.next();
     }
 
     fn index(&mut self, root: &mut Node) {

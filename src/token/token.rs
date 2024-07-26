@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::node::node::Node;
 
 #[derive(PartialEq, Clone, Debug)]
@@ -24,6 +26,7 @@ pub enum Value {
     Float(f32),
     List(Vec<Value>),
     Function(Node),
+    Map(HashMap<String, Value>),
     Null,
 }
 

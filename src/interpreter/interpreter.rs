@@ -59,6 +59,14 @@ impl ScopeManager {
                         panic!("Type mismatch");
                     }
                 }
+                if let Value::Map(_) = last_value {
+                    if let Value::Map(_) = value {
+                        scope.insert(identifier, value);
+                        return;
+                    } else {
+                        panic!("Type mismatch");
+                    }
+                }
 
                 scope.insert(identifier, value);
                 return;
@@ -169,11 +177,17 @@ impl Interpreter {
             NodeType::List => {
                 return self.handle_list(root);
             }
+            NodeType::Map => {
+                return self.handle_map(root);
+            }
             NodeType::If => {
                 return self.handle_if(root, early_return);
             }
             NodeType::Index => {
                 return self.handle_index(root);
+            }
+            NodeType::MapIndex => {
+                return self.handle_map_index(root);
             }
             NodeType::Operation => {
                 return self.handle_operator(root);
@@ -335,6 +349,17 @@ impl Interpreter {
             Value::Boolean(val) => print!("{}", val),
             Value::Null => print!("null"),
             Value::Function(_) => print!("function"),
+            Value::Map(val) => {
+                print!("{{");
+                for (i, (key, value)) in val.iter().enumerate() {
+                    print!("{}: ", key);
+                    self.print_value(value);
+                    if i < val.len() - 1 {
+                        print!(", ");
+                    }
+                }
+                print!("}}");
+            }
             Value::List(val) => {
                 print!("[");
                 for (i, v) in val.iter().enumerate() {
@@ -401,6 +426,7 @@ impl Interpreter {
             Value::Boolean(_) => Value::String("bool".to_string()),
             Value::List(_) => Value::String("list".to_string()),
             Value::Function(_) => Value::String("function".to_string()),
+            Value::Map(_) => Value::String("map".to_string()),
             Value::Null => Value::String("null".to_string()),
         };
     }
@@ -494,6 +520,10 @@ impl Interpreter {
             if type_annotation != "function" {
                 panic!("Type mismatch");
             }
+        } else if let Value::Map(_) = value {
+            if type_annotation != "map" {
+                panic!("Type mismatch");
+            }
         } else {
             panic!("Invalid type");
         }
@@ -549,6 +579,44 @@ impl Interpreter {
             .collect();
 
         return Value::List(values);
+    }
+
+    fn handle_map(&mut self, root: &Node) -> Value {
+        let mut map = HashMap::new();
+
+        let values: Vec<Value> = root
+            .children
+            .iter()
+            .map(|child| self.evaluate_helper(child, &mut false))
+            .collect();
+
+        for i in (0..values.len()).step_by(2) {
+            let key = if let Value::String(key) = &values[i] {
+                key.clone()
+            } else {
+                panic!("Expected a string");
+            };
+            map.insert(key, values[i + 1].clone());
+        }
+
+        return Value::Map(map);
+    }
+
+    fn handle_map_index(&mut self, root: &Node) -> Value {
+        let map = self.evaluate_helper(&root.children[0], &mut false);
+        let key = self.evaluate_helper(&root.children[1], &mut false);
+
+        let key = if let Value::String(key) = key {
+            key
+        } else {
+            panic!("Expected a string");
+        };
+
+        if let Value::Map(map) = map {
+            return map.get(&key.to_string()).unwrap().clone();
+        } else {
+            panic!("Expected a map");
+        }
     }
 
     fn handle_index(&mut self, root: &Node) -> Value {
